@@ -21,15 +21,21 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@nestjs/bullmq": "^12.0.0",
     "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^12.0.0",
     "@nestjs/core": "^11.0.1",
     "@nestjs/mongoose": "^12.0.0",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.4.7",
+    "bullmq": "^6.3.8",
+    "cheerio": "^1.2.0",
+    "ioredis": "^6.0.0",
     "mongoose": "^9.10.1",
     "nestjs-zod": "^5.5.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
@@ -64,6 +70,9 @@
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!(@nestjs/mongoose|@nestjs/bullmq|bullmq)/)"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"

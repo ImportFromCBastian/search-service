@@ -1,103 +1,74 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
-
-  "vcs": {
-    "enabled": true,
-    "clientKind": "git",
-    "useIgnoreFile": true
-  },
-
+  "root": false,
+  "extends": [
+    "../biome.jsonc"
+  ],
   "files": {
-    "ignoreUnknown": true,
     "includes": [
-      "**",
-      "!!**/node_modules",
-      "!!**/dist",
-      "!!**/coverage",
-      "!**/*.gen.ts"
+      "!**/*.gen.ts",
+      "!**/public"
     ]
   },
-
-  "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineWidth": 100,
-    "lineEnding": "lf"
-  },
-
   "javascript": {
     "formatter": {
-      "quoteStyle": "single",
       "jsxQuoteStyle": "double",
-      "semicolons": "asNeeded",
-      "trailingCommas": "all",
-      "arrowParentheses": "always"
+      "semicolons": "asNeeded"
     }
   },
-
-
   "css": {
     "parser": {
       "tailwindDirectives": true
     }
   },
-
-  "assist": {
-    "enabled": true,
-    "actions": {
-      "source": {
-        "organizeImports": "on"
-      }
-    }
-  },
-
   "linter": {
-    "enabled": true,
     "domains": {
       "react": "recommended"
     },
     "rules": {
-      "preset":"recommended",
-
       "correctness": {
-        "noUnusedImports": "error",
-        "noUnusedVariables": "warn",
-        "noUnusedFunctionParameters": "warn",
         "useExhaustiveDependencies": "error",
         "useHookAtTopLevel": "error"
       },
-
       "style": {
         "useImportType": "error",
-        "noNonNullAssertion": "warn",
         "useComponentExportOnlyModules": "warn"
       },
-
       "suspicious": {
         "noConsole": {
           "level": "warn",
-          "options": { "allow": ["warn", "error"] }
+          "options": {
+            "allow": [
+              "warn",
+              "error"
+            ]
+          }
         }
       },
-
       "nursery": {
         // Ordena clases de Tailwind (equivalente a prettier-plugin-tailwindcss)
         "useSortedClasses": {
           "level": "warn",
           "fix": "safe",
           "options": {
-            "functions": ["cn", "clsx", "cva", "twMerge"]
+            "functions": [
+              "cn",
+              "clsx",
+              "cva",
+              "twMerge"
+            ]
           }
         }
       }
     }
   },
-
   "overrides": [
     {
       // Componentes generados por shadcn
-      "includes": ["src/components/ui/**"],
+      "includes": [
+        "src/components/ui/**",
+        "components/ui/**"
+      ],
       "linter": {
         "rules": {
           "style": {

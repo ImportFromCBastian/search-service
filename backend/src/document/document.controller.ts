@@ -1,34 +1,40 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { Types } from 'mongoose';
+import { CurrentSite } from '../shared/decorators/current-site.decorator';
+import { CurrentUser } from '../shared/decorators/current-user.decorator';
+import { ApiKeyGuard } from '../shared/guards/api-key.guard';
+import type { SiteDocument } from '../site/entities/site.entity';
 import { DocumentService } from './document.service';
-import { CreateDocumentDto } from './dto/create-document.dto';
-import { UpdateDocumentDto } from './dto/update-document.dto';
+import { DocumentResponseDto } from './dto/document-response.dto';
+import { QueryDocumentDto } from './dto/query-document.dto';
 
-@Controller('document')
+@ApiTags('documents')
+@Controller('documents')
 export class DocumentController {
   constructor(private readonly documentService: DocumentService) {}
 
-  @Post()
-  create(@Body() createDocumentDto: CreateDocumentDto) {
-    return this.documentService.create(createDocumentDto);
+  @Get()
+  @ApiOperation({ summary: 'Consultar y buscar documentos indexados del usuario con filtros y paginación' })
+  @ApiResponse({ status: 200, description: 'Lista paginada de documentos', type: [DocumentResponseDto] })
+  async findAll(@CurrentUser() userId: Types.ObjectId, @Query() query: QueryDocumentDto) {
+    return this.documentService.findAll(userId, query);
   }
 
-  @Get()
-  findAll() {
-    return this.documentService.findAll();
+  @Get('public/search')
+  @UseGuards(ApiKeyGuard)
+  @ApiSecurity('api-key')
+  @ApiOperation({ summary: 'API Pública de búsqueda en vivo para sitios web cliente (autenticado por x-api-key)' })
+  @ApiResponse({ status: 200, description: 'Resultados de búsqueda en el snapshot activo', type: [DocumentResponseDto] })
+  async searchPublic(@CurrentSite() site: SiteDocument, @Query() query: QueryDocumentDto) {
+    return this.documentService.searchPublic(site._id, query);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.documentService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDocumentDto: UpdateDocumentDto) {
-    return this.documentService.update(+id, updateDocumentDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.documentService.remove(+id);
+  @ApiOperation({ summary: 'Obtener detalle completo de un documento indexado' })
+  @ApiParam({ name: 'id', description: 'ID del documento' })
+  @ApiResponse({ status: 200, description: 'Detalle del documento', type: DocumentResponseDto })
+  async findOne(@CurrentUser() userId: Types.ObjectId, @Param('id') id: string) {
+    return this.documentService.findOne(userId, id);
   }
 }

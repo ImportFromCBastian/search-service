@@ -1,72 +1,29 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
-
-  "vcs": {
-    "enabled": true,
-    "clientKind": "git",
-    "useIgnoreFile": true
-  },
-
-  "files": {
-    "ignoreUnknown": true,
-    "includes": ["**", "!!**/node_modules", "!!**/dist", "!!**/coverage"]
-  },
-
-  "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineWidth": 100,
-    "lineEnding": "lf"
-  },
-
+  "root": false,
+  "extends": [
+    "../biome.jsonc"
+  ],
   "javascript": {
-    "formatter": {
-      "quoteStyle": "single",
-      "semicolons": "always",
-      "trailingCommas": "all",
-      "arrowParentheses": "always"
-    },
     "parser": {
       "unsafeParameterDecoratorsEnabled": true
     }
   },
-
-  "assist": {
-    "enabled": true,
-    "actions": {
-      "source": {
-        "organizeImports": "on"
-      }
-    }
-  },
-
   "linter": {
-    "enabled": true,
     "rules": {
-      "preset": "recommended",
-      "correctness": {
-        "noUnusedImports": "error",
-        "noUnusedVariables": "warn",
-        // Guards, interceptors y filters suelen recibir parámetros que no usas
-        "noUnusedFunctionParameters": "warn"
-      },
-
       "style": {
-        "useImportType": "off",
-        "noNonNullAssertion": "warn"
-      },
-
-      "suspicious": {
-        "noConsole": "warn",
-        "noExplicitAny": "warn"
+        // NestJS requiere que useImportType esté deshabilitado para la inyección de dependencias en runtime
+        "useImportType": "off"
       }
     }
   },
-
   "overrides": [
     {
-      "includes": ["**/*.spec.ts", "**/*.e2e-spec.ts", "test/**"],
+      "includes": [
+        "**/*.spec.ts",
+        "**/*.e2e-spec.ts",
+        "src/__mocks__/**"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -75,12 +32,20 @@
           "suspicious": {
             "noExplicitAny": "off",
             "noConsole": "off"
+          },
+          "correctness": {
+            "noUnusedFunctionParameters": "off"
+          },
+          "complexity": {
+            "noStaticOnlyClass": "off"
           }
         }
       }
     },
     {
-      "includes": ["scripts/**"],
+      "includes": [
+        "scripts/**"
+      ],
       "linter": {
         "rules": {
           "suspicious": {

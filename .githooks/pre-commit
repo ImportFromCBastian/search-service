@@ -28,13 +28,13 @@ for FILE in $STAGED_FILES; do
     
     git add "$FILE"
 
-  # --- LÓGICA PARA EL SERVER ---
-  elif echo "$FILE" | grep -q "^server/"; then
-    REL_FILE=$(echo "$FILE" | sed 's/^server\///')
+  # --- LÓGICA PARA EL BACKEND ---
+  elif echo "$FILE" | grep -q "^backend/"; then
+    REL_FILE=$(echo "$FILE" | sed 's/^backend\///')
     
-    echo "⚙️ Formateando (Server): $REL_FILE"
+    echo "⚙️ Formateando (Backend): $REL_FILE"
     
-    cd server
+    cd backend
     pnpx biome format --write "$REL_FILE" || HAS_ERROR=1
     cd ..
     

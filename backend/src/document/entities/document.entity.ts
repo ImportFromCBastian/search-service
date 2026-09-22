@@ -36,15 +36,10 @@ export class CrawlDocument {
   @Prop({ type: String, default: '' })
   description!: string;
 
-  /**
-   * Campos libres que devuelva el extractor (precio, rating, imágenes...).
-   * Aquí es donde MongoDB ayuda: cada sitio puede traer campos distintos
-   * sin cambiar ninguna estructura.
-   */
+  /** Campos libres que devuelva el extractor (precio, rating, imágenes...). */
   @Prop({ type: MongooseSchema.Types.Mixed })
   extra?: Record<string, unknown>;
 
-  /** En qué nivel de profundidad se encontró la página (0 = URL inicial). */
   @Prop({ type: Number, default: 0 })
   depth!: number;
 
@@ -59,6 +54,3 @@ export class CrawlDocument {
 
 export type CrawlDocumentDocument = HydratedDocument<CrawlDocument>;
 export const CrawlDocumentSchema = SchemaFactory.createForClass(CrawlDocument);
-
-// "Ver docs" de un snapshot
-CrawlDocumentSchema.index({ snapshotId: 1, _id: 1 });
