@@ -2,8 +2,8 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { type HydratedDocument, Types } from 'mongoose';
 import {
   SITE_FREQUENCIES,
-  SNAPSHOT_STATUSES,
   type SiteFrequency,
+  SNAPSHOT_STATUSES,
   type SnapshotStatus,
 } from '../../shared/crawl.enum';
 

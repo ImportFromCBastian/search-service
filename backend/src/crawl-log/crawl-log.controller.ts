@@ -10,10 +10,11 @@ export class CrawlLogController {
   constructor(private readonly crawlLogService: CrawlLogService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Consultar logs técnicos y eventos de crawling con filtros y paginación' })
+  @ApiOperation({
+    summary: 'Consultar logs técnicos y eventos de crawling con filtros y paginación',
+  })
   @ApiResponse({ status: 200, description: 'Lista paginada de logs', type: [CrawlLogResponseDto] })
   async findAll(@Query() query: QueryCrawlLogDto) {
     return this.crawlLogService.findAll(query);
   }
 }
-

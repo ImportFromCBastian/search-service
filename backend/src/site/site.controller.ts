@@ -14,10 +14,13 @@ export class SiteController {
   constructor(private readonly siteService: SiteService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Registrar un nuevo sitio e iniciar automáticamente su primer snapshot' })
+  @ApiOperation({
+    summary: 'Registrar un nuevo sitio e iniciar automáticamente su primer snapshot',
+  })
   @ApiResponse({
     status: 201,
-    description: 'Sitio registrado exitosamente. Incluye la API Key secreta en texto plano (única vez).',
+    description:
+      'Sitio registrado exitosamente. Incluye la API Key secreta en texto plano (única vez).',
     type: SiteCreatedResponseDto,
   })
   async create(@CurrentUser() userId: Types.ObjectId, @Body() createSiteDto: CreateSiteDto) {
@@ -25,7 +28,10 @@ export class SiteController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar todos los sitios del usuario actual con paginación y estado del último snapshot' })
+  @ApiOperation({
+    summary:
+      'Listar todos los sitios del usuario actual con paginación y estado del último snapshot',
+  })
   @ApiResponse({ status: 200, description: 'Listado de sitios', type: [SiteResponseDto] })
   async findAll(@CurrentUser() userId: Types.ObjectId, @Query() pagination: PaginationDto) {
     return this.siteService.findAll(userId, pagination);
@@ -52,7 +58,9 @@ export class SiteController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Eliminar un sitio junto con todos sus snapshots, logs y documentos indexados' })
+  @ApiOperation({
+    summary: 'Eliminar un sitio junto con todos sus snapshots, logs y documentos indexados',
+  })
   @ApiParam({ name: 'id', description: 'ID del sitio' })
   async remove(@CurrentUser() userId: Types.ObjectId, @Param('id') id: string) {
     return this.siteService.remove(userId, id);

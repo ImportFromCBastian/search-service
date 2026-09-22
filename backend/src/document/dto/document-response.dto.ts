@@ -15,7 +15,10 @@ export const DocumentResponseSchema = z.object({
   name: z.string().describe('Título o nombre del documento extraído'),
   url: z.string().describe('URL original de la página rastreada'),
   description: z.string().describe('Descripción o contenido resumido'),
-  extra: z.record(z.string(), z.unknown()).optional().describe('Metadatos libres extraídos por el usuario'),
+  extra: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe('Metadatos libres extraídos por el usuario'),
   depth: z.number().describe('Nivel de profundidad en el que fue descubierto'),
   discoveredLinks: z.array(z.string()).describe('Enlaces salientes descubiertos en esta página'),
   crawl: CrawlInfoResponseSchema.describe('Detalles técnicos de la extracción'),
@@ -23,4 +26,3 @@ export const DocumentResponseSchema = z.object({
 });
 
 export class DocumentResponseDto extends createZodDto(DocumentResponseSchema) {}
-

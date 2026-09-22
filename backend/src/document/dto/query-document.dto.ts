@@ -9,4 +9,3 @@ export const QueryDocumentSchema = PaginationSchema.extend({
 });
 
 export class QueryDocumentDto extends createZodDto(QueryDocumentSchema) {}
-

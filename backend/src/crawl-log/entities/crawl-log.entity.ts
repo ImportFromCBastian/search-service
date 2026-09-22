@@ -31,4 +31,3 @@ export const CrawlLogSchema = SchemaFactory.createForClass(CrawlLog);
 // Consulta de logs de un snapshot ordenados cronológicamente
 CrawlLogSchema.index({ snapshotId: 1, createdAt: 1 });
 CrawlLogSchema.index({ siteId: 1, createdAt: -1 });
-

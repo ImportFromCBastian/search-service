@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ZodValidationPipe, cleanupOpenApiDoc } from 'nestjs-zod';
+import { cleanupOpenApiDoc, ZodValidationPipe } from 'nestjs-zod';
 import { AppModule } from './app.module';
 
 async function bootstrap() {

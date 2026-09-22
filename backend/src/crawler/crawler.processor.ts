@@ -69,7 +69,13 @@ export class CrawlerProcessor extends WorkerHost {
       },
     );
 
-    await this.log(siteObjectId, snapshotObjectId, 'info', 'Inicio de crawling job', snapshot.configUsed.url);
+    await this.log(
+      siteObjectId,
+      snapshotObjectId,
+      'info',
+      'Inicio de crawling job',
+      snapshot.configUsed.url,
+    );
 
     try {
       const { url: initialUrl, depth: maxDepth, extractor, pageResolver } = snapshot.configUsed;
@@ -92,7 +98,13 @@ export class CrawlerProcessor extends WorkerHost {
         }
         visited.add(normalizedUrl);
 
-        await this.log(siteObjectId, snapshotObjectId, 'info', `Visitando URL [Profundidad ${item.depth}]`, normalizedUrl);
+        await this.log(
+          siteObjectId,
+          snapshotObjectId,
+          'info',
+          `Visitando URL [Profundidad ${item.depth}]`,
+          normalizedUrl,
+        );
 
         const startTime = Date.now();
         let response: Response;
@@ -106,7 +118,13 @@ export class CrawlerProcessor extends WorkerHost {
           });
         } catch (fetchErr: unknown) {
           const errMsg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
-          await this.log(siteObjectId, snapshotObjectId, 'warn', `Fallo al descargar página: ${errMsg}`, normalizedUrl);
+          await this.log(
+            siteObjectId,
+            snapshotObjectId,
+            'warn',
+            `Fallo al descargar página: ${errMsg}`,
+            normalizedUrl,
+          );
           continue;
         }
 
@@ -135,7 +153,13 @@ export class CrawlerProcessor extends WorkerHost {
           extractedData = this.executeExtractorSandbox(extractor, $, normalizedUrl);
         } catch (sandboxErr: unknown) {
           const errMsg = sandboxErr instanceof Error ? sandboxErr.message : String(sandboxErr);
-          await this.log(siteObjectId, snapshotObjectId, 'error', `Error en extractor de usuario: ${errMsg}`, normalizedUrl);
+          await this.log(
+            siteObjectId,
+            snapshotObjectId,
+            'error',
+            `Error en extractor de usuario: ${errMsg}`,
+            normalizedUrl,
+          );
           extractedData = {
             name: $('title').text().trim() || normalizedUrl,
             description: $('meta[name="description"]').attr('content')?.trim() || '',
@@ -150,7 +174,10 @@ export class CrawlerProcessor extends WorkerHost {
             try {
               const resolved = new URL(href, normalizedUrl);
               // Mantenerse en el mismo dominio
-              if (resolved.protocol.startsWith('http') && resolved.hostname === initialParsed.hostname) {
+              if (
+                resolved.protocol.startsWith('http') &&
+                resolved.hostname === initialParsed.hostname
+              ) {
                 resolved.hash = ''; // Descartar anclas
                 discoveredRawLinks.push(resolved.href);
               }
@@ -164,10 +191,20 @@ export class CrawlerProcessor extends WorkerHost {
         let linksToQueue = discoveredRawLinks;
         if (pageResolver && pageResolver.trim().length > 0) {
           try {
-            linksToQueue = this.executePageResolverSandbox(pageResolver, discoveredRawLinks, normalizedUrl);
+            linksToQueue = this.executePageResolverSandbox(
+              pageResolver,
+              discoveredRawLinks,
+              normalizedUrl,
+            );
           } catch (resolverErr: unknown) {
             const errMsg = resolverErr instanceof Error ? resolverErr.message : String(resolverErr);
-            await this.log(siteObjectId, snapshotObjectId, 'warn', `Error en pageResolver: ${errMsg}`, normalizedUrl);
+            await this.log(
+              siteObjectId,
+              snapshotObjectId,
+              'warn',
+              `Error en pageResolver: ${errMsg}`,
+              normalizedUrl,
+            );
           }
         }
 
@@ -270,7 +307,12 @@ export class CrawlerProcessor extends WorkerHost {
         },
       );
 
-      await this.log(siteObjectId, snapshotObjectId, 'error', `Fallo crítico en el crawling: ${errMsg}`);
+      await this.log(
+        siteObjectId,
+        snapshotObjectId,
+        'error',
+        `Fallo crítico en el crawling: ${errMsg}`,
+      );
     }
   }
 
@@ -288,7 +330,7 @@ export class CrawlerProcessor extends WorkerHost {
   }
 
   private executeExtractorSandbox(code: string, $: cheerio.CheerioAPI, url: string): ExtractedData {
-    const sandbox: { $, url: string; result: ExtractedData | null } = {
+    const sandbox: { $; url: string; result: ExtractedData | null } = {
       $,
       url,
       result: null,
@@ -359,4 +401,3 @@ export class CrawlerProcessor extends WorkerHost {
     }
   }
 }
-

@@ -12,8 +12,7 @@ export const CreateSiteSchema = z.object({
     .string()
     .url('Debe ser una URL válida con protocolo http o https')
     .describe('URL raíz desde donde iniciará el crawler'),
-  depth: z
-    .coerce
+  depth: z.coerce
     .number()
     .int()
     .min(1, 'La profundidad mínima es 1 (solo la página inicial)')
@@ -26,7 +25,9 @@ export const CreateSiteSchema = z.object({
   extractor: z
     .string()
     .min(1, 'El código del extractor es requerido')
-    .describe('Función JS para extraer campos usando Cheerio: ($) => ({ name, url, description, extra })'),
+    .describe(
+      'Función JS para extraer campos usando Cheerio: ($) => ({ name, url, description, extra })',
+    ),
   pageResolver: z
     .string()
     .optional()

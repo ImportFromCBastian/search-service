@@ -8,7 +8,7 @@ export interface GeneratedApiKey {
 
 export function generateApiKey(): GeneratedApiKey {
   const random = crypto.randomBytes(24).toString('hex');
-  const rawKey = `sk_live_${random}`;
+  const rawKey = `unlp_info_${random}`;
   const hash = hashApiKey(rawKey);
   const prefix = `${rawKey.slice(0, 12)}...${rawKey.slice(-4)}`;
 
@@ -18,4 +18,3 @@ export function generateApiKey(): GeneratedApiKey {
 export function hashApiKey(apiKey: string): string {
   return crypto.createHash('sha256').update(apiKey.trim()).digest('hex');
 }
-

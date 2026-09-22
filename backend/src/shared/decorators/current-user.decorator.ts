@@ -20,4 +20,3 @@ export const CurrentUser = createParamDecorator(
     return DEFAULT_USER_ID;
   },
 );
-

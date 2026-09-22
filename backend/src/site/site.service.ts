@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { CrawlerService } from '../crawler/crawler.service';
 import { CrawlLog, type CrawlLogDocument } from '../crawl-log/entities/crawl-log.entity';
+import { CrawlerService } from '../crawler/crawler.service';
 import { CrawlDocument, type CrawlDocumentDocument } from '../document/entities/document.entity';
 import type { PaginationDto } from '../shared/dto/pagination.dto';
 import { generateApiKey } from '../shared/utils/api-key.util';
@@ -76,7 +76,13 @@ export class SiteService {
     const filter = { userId };
 
     const [items, total] = await Promise.all([
-      this.siteModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(pagination.limit).lean().exec(),
+      this.siteModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pagination.limit)
+        .lean()
+        .exec(),
       this.siteModel.countDocuments(filter).exec(),
     ]);
 
@@ -94,7 +100,10 @@ export class SiteService {
       throw new NotFoundException(`Sitio con id ${id} no válido`);
     }
 
-    const site = await this.siteModel.findOne({ _id: new Types.ObjectId(id), userId }).lean().exec();
+    const site = await this.siteModel
+      .findOne({ _id: new Types.ObjectId(id), userId })
+      .lean()
+      .exec();
 
     if (!site) {
       throw new NotFoundException(`Sitio con id ${id} no encontrado`);

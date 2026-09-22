@@ -15,9 +15,15 @@ export const CRAWLER_QUEUE_NAME = 'crawler-queue';
 export class CrawlerService {
   private readonly logger = new Logger(CrawlerService.name);
 
-  constructor(@InjectQueue(CRAWLER_QUEUE_NAME) private readonly crawlerQueue: Queue<CrawlJobData>) {}
+  constructor(
+    @InjectQueue(CRAWLER_QUEUE_NAME) private readonly crawlerQueue: Queue<CrawlJobData>,
+  ) {}
 
-  async enqueueCrawlJob(siteId: Types.ObjectId, snapshotId: Types.ObjectId, userId: Types.ObjectId) {
+  async enqueueCrawlJob(
+    siteId: Types.ObjectId,
+    snapshotId: Types.ObjectId,
+    userId: Types.ObjectId,
+  ) {
     this.logger.log(`Encolando job de crawl para siteId=${siteId}, snapshotId=${snapshotId}`);
 
     const job = await this.crawlerQueue.add(
@@ -37,4 +43,3 @@ export class CrawlerService {
     return job;
   }
 }
-

@@ -32,7 +32,13 @@ export class DocumentService {
     const skip = (query.page - 1) * query.limit;
 
     const [items, total] = await Promise.all([
-      this.documentModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(query.limit).lean().exec(),
+      this.documentModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(query.limit)
+        .lean()
+        .exec(),
       this.documentModel.countDocuments(filter).exec(),
     ]);
 
@@ -50,7 +56,10 @@ export class DocumentService {
       throw new NotFoundException(`ID de documento ${id} no válido`);
     }
 
-    const doc = await this.documentModel.findOne({ _id: new Types.ObjectId(id), userId }).lean().exec();
+    const doc = await this.documentModel
+      .findOne({ _id: new Types.ObjectId(id), userId })
+      .lean()
+      .exec();
 
     if (!doc) {
       throw new NotFoundException(`Documento con ID ${id} no encontrado`);
@@ -86,7 +95,13 @@ export class DocumentService {
     const skip = (query.page - 1) * query.limit;
 
     const [items, total] = await Promise.all([
-      this.documentModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(query.limit).lean().exec(),
+      this.documentModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(query.limit)
+        .lean()
+        .exec(),
       this.documentModel.countDocuments(filter).exec(),
     ]);
 

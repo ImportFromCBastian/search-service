@@ -42,7 +42,7 @@ export class SnapshotService {
       );
     }
 
-    // 2. Crear snapshot tomando copia exacta de la configuración actual del sitio
+    // 2. Crear snapshot
     const snapshot = new this.snapshotModel({
       siteId: siteObjectId,
       userId,
@@ -64,7 +64,9 @@ export class SnapshotService {
       const isMongoDuplicate =
         err && typeof err === 'object' && 'code' in err && (err as { code: number }).code === 11000;
       if (isMongoDuplicate) {
-        throw new BadRequestException('Ya existe un snapshot activo para este sitio (garantía de base de datos).');
+        throw new BadRequestException(
+          'Ya existe un snapshot activo para este sitio (garantía de base de datos).',
+        );
       }
       throw err;
     }
@@ -99,7 +101,13 @@ export class SnapshotService {
     const filter = { siteId: siteObjectId, userId };
 
     const [items, total] = await Promise.all([
-      this.snapshotModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(pagination.limit).lean().exec(),
+      this.snapshotModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pagination.limit)
+        .lean()
+        .exec(),
       this.snapshotModel.countDocuments(filter).exec(),
     ]);
 
@@ -117,7 +125,10 @@ export class SnapshotService {
       throw new NotFoundException(`ID de snapshot ${id} no válido`);
     }
 
-    const snapshot = await this.snapshotModel.findOne({ _id: new Types.ObjectId(id), userId }).lean().exec();
+    const snapshot = await this.snapshotModel
+      .findOne({ _id: new Types.ObjectId(id), userId })
+      .lean()
+      .exec();
 
     if (!snapshot) {
       throw new NotFoundException(`Snapshot con ID ${id} no encontrado`);
@@ -139,7 +150,9 @@ export class SnapshotService {
     }
 
     if (snapshot.status !== 'pending' && snapshot.status !== 'running') {
-      throw new BadRequestException(`No se puede cancelar un snapshot con estado '${snapshot.status}'`);
+      throw new BadRequestException(
+        `No se puede cancelar un snapshot con estado '${snapshot.status}'`,
+      );
     }
 
     const finishedAt = new Date();

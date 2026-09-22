@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { CrawlerModule } from '../crawler/crawler.module';
 import { CrawlLog, CrawlLogSchema } from '../crawl-log/entities/crawl-log.entity';
+import { CrawlerModule } from '../crawler/crawler.module';
 import { CrawlDocument, CrawlDocumentSchema } from '../document/entities/document.entity';
 import { Snapshot, SnapshotSchema } from '../snapshot/entities/snapshot.entity';
 import { Site, SiteSchema } from './entities/site.entity';

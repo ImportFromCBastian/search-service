@@ -10,4 +10,3 @@ export const QueryCrawlLogSchema = PaginationSchema.extend({
 });
 
 export class QueryCrawlLogDto extends createZodDto(QueryCrawlLogSchema) {}
-

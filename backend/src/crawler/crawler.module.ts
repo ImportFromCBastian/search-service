@@ -24,4 +24,3 @@ import { CRAWLER_QUEUE_NAME, CrawlerService } from './crawler.service';
   exports: [CrawlerService],
 })
 export class CrawlerModule {}
-

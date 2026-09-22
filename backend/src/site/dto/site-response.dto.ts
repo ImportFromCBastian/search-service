@@ -18,7 +18,9 @@ export const SiteResponseSchema = z.object({
   extractor: z.string().describe('Extractor de contenido'),
   pageResolver: z.string().optional().describe('Filtro de URLs opcional'),
   apiKeyPrefix: z.string().describe('Prefijo enmascarado de la API Key (ej. sk_live_1234****)'),
-  lastSnapshot: LastSnapshotSummaryResponseSchema.optional().describe('Resumen del último snapshot'),
+  lastSnapshot: LastSnapshotSummaryResponseSchema.optional().describe(
+    'Resumen del último snapshot',
+  ),
   createdAt: z.string().describe('Fecha de creación'),
   updatedAt: z.string().describe('Fecha de última modificación'),
 });
@@ -26,9 +28,10 @@ export const SiteResponseSchema = z.object({
 export const SiteCreatedResponseSchema = SiteResponseSchema.extend({
   apiKey: z
     .string()
-    .describe('API Key secreta en texto plano generada para este sitio. Mostrada ÚNICAMENTE al crear o regenerar.'),
+    .describe(
+      'API Key secreta en texto plano generada para este sitio. Mostrada ÚNICAMENTE al crear o regenerar.',
+    ),
 });
 
 export class SiteResponseDto extends createZodDto(SiteResponseSchema) {}
 export class SiteCreatedResponseDto extends createZodDto(SiteCreatedResponseSchema) {}
-

@@ -11,4 +11,3 @@ import { CrawlLog, CrawlLogSchema } from './entities/crawl-log.entity';
   exports: [CrawlLogService],
 })
 export class CrawlLogModule {}
-

@@ -13,9 +13,18 @@ export class SnapshotController {
   constructor(private readonly snapshotService: SnapshotService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Disparar un nuevo snapshot para un sitio (sólo permitido si no hay otro activo)' })
-  @ApiResponse({ status: 201, description: 'Snapshot iniciado exitosamente', type: SnapshotResponseDto })
-  async create(@CurrentUser() userId: Types.ObjectId, @Body() createSnapshotDto: CreateSnapshotDto) {
+  @ApiOperation({
+    summary: 'Disparar un nuevo snapshot para un sitio (sólo permitido si no hay otro activo)',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Snapshot iniciado exitosamente',
+    type: SnapshotResponseDto,
+  })
+  async create(
+    @CurrentUser() userId: Types.ObjectId,
+    @Body() createSnapshotDto: CreateSnapshotDto,
+  ) {
     return this.snapshotService.create(userId, createSnapshotDto);
   }
 

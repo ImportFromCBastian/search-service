@@ -2,9 +2,9 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { type HydratedDocument, Types } from 'mongoose';
 import {
   SITE_FREQUENCIES,
+  type SiteFrequency,
   SNAPSHOT_STATUSES,
   SNAPSHOT_TRIGGERS,
-  type SiteFrequency,
   type SnapshotStatus,
   type SnapshotTrigger,
 } from '../../shared/crawl.enum';

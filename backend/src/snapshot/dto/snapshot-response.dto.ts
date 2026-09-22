@@ -16,7 +16,9 @@ export const SnapshotResponseSchema = z.object({
   userId: z.string().describe('ID del usuario propietario'),
   status: z.enum(SNAPSHOT_STATUSES).describe('Estado de la ejecución del snapshot'),
   trigger: z.enum(SNAPSHOT_TRIGGERS).describe('Modo de disparo: manual o programado'),
-  configUsed: SnapshotConfigUsedResponseSchema.describe('Copia estática de la configuración ejecutada'),
+  configUsed: SnapshotConfigUsedResponseSchema.describe(
+    'Copia estática de la configuración ejecutada',
+  ),
   documentCount: z.number().describe('Cantidad de documentos extraídos'),
   startedAt: z.string().optional().describe('Fecha/hora de inicio de ejecución'),
   finishedAt: z.string().optional().describe('Fecha/hora de finalización'),
@@ -27,4 +29,3 @@ export const SnapshotResponseSchema = z.object({
 });
 
 export class SnapshotResponseDto extends createZodDto(SnapshotResponseSchema) {}
-

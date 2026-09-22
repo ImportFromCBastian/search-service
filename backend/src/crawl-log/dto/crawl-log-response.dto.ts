@@ -14,4 +14,3 @@ export const CrawlLogResponseSchema = z.object({
 });
 
 export class CrawlLogResponseDto extends createZodDto(CrawlLogResponseSchema) {}
-

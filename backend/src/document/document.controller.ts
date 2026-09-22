@@ -15,8 +15,14 @@ export class DocumentController {
   constructor(private readonly documentService: DocumentService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Consultar y buscar documentos indexados del usuario con filtros y paginación' })
-  @ApiResponse({ status: 200, description: 'Lista paginada de documentos', type: [DocumentResponseDto] })
+  @ApiOperation({
+    summary: 'Consultar y buscar documentos indexados del usuario con filtros y paginación',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista paginada de documentos',
+    type: [DocumentResponseDto],
+  })
   async findAll(@CurrentUser() userId: Types.ObjectId, @Query() query: QueryDocumentDto) {
     return this.documentService.findAll(userId, query);
   }
@@ -24,8 +30,14 @@ export class DocumentController {
   @Get('public/search')
   @UseGuards(ApiKeyGuard)
   @ApiSecurity('api-key')
-  @ApiOperation({ summary: 'API Pública de búsqueda en vivo para sitios web cliente (autenticado por x-api-key)' })
-  @ApiResponse({ status: 200, description: 'Resultados de búsqueda en el snapshot activo', type: [DocumentResponseDto] })
+  @ApiOperation({
+    summary: 'API Pública de búsqueda en vivo para sitios web cliente (autenticado por x-api-key)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Resultados de búsqueda en el snapshot activo',
+    type: [DocumentResponseDto],
+  })
   async searchPublic(@CurrentSite() site: SiteDocument, @Query() query: QueryDocumentDto) {
     return this.documentService.searchPublic(site._id, query);
   }

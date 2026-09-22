@@ -7,4 +7,3 @@ export const CurrentSite = createParamDecorator(
     return request.site;
   },
 );
-
