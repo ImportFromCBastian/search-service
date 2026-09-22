@@ -1,0 +1,64 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { type HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
+
+/** Datos técnicos de la visita a la página (lo que muestra "Respuesta del crawling job"). */
+@Schema({ _id: false })
+export class CrawlInfo {
+  @Prop({ type: Number })
+  statusCode?: number;
+
+  @Prop({ type: Number })
+  executionTimeMs?: number;
+
+  @Prop({ type: Date, required: true })
+  fetchedAt!: Date;
+}
+export const CrawlInfoSchema = SchemaFactory.createForClass(CrawlInfo);
+
+@Schema({ collection: 'documents', timestamps: { createdAt: true, updatedAt: false } })
+export class CrawlDocument {
+  @Prop({ type: Types.ObjectId, required: true })
+  userId!: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'Site', required: true })
+  siteId!: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'Snapshot', required: true })
+  snapshotId!: Types.ObjectId;
+
+  // Los 3 campos que devuelve el extractor de ejemplo del mock
+  @Prop({ type: String, required: true })
+  name!: string;
+
+  @Prop({ type: String, required: true })
+  url!: string;
+
+  @Prop({ type: String, default: '' })
+  description!: string;
+
+  /**
+   * Campos libres que devuelva el extractor (precio, rating, imágenes...).
+   * Aquí es donde MongoDB ayuda: cada sitio puede traer campos distintos
+   * sin cambiar ninguna estructura.
+   */
+  @Prop({ type: MongooseSchema.Types.Mixed })
+  extra?: Record<string, unknown>;
+
+  /** En qué nivel de profundidad se encontró la página (0 = URL inicial). */
+  @Prop({ type: Number, default: 0 })
+  depth!: number;
+
+  @Prop({ type: [String], default: [] })
+  discoveredLinks!: string[];
+
+  @Prop({ type: CrawlInfoSchema, required: true })
+  crawl!: CrawlInfo;
+
+  createdAt!: Date;
+}
+
+export type CrawlDocumentDocument = HydratedDocument<CrawlDocument>;
+export const CrawlDocumentSchema = SchemaFactory.createForClass(CrawlDocument);
+
+// "Ver docs" de un snapshot
+CrawlDocumentSchema.index({ snapshotId: 1, _id: 1 });

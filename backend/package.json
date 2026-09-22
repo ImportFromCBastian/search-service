@@ -1,8 +1,8 @@
 {
   "name": "backend",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Backend for the search service application",
+  "author": "Sebastian Hernandez",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
@@ -23,8 +23,11 @@
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/mongoose": "^12.0.0",
     "@nestjs/platform-express": "^11.0.1",
-    "@nestjs/swagger": "^12.0.1",
+    "@nestjs/swagger": "^11.4.7",
+    "mongoose": "^9.10.1",
+    "nestjs-zod": "^5.5.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },

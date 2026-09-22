@@ -1,0 +1,17 @@
+node_modules
+dist
+coverage
+.git
+.gitignore
+.vscode
+
+# Nunca metas secretos en la imagen
+.env
+.env.*
+!.env.example
+
+Dockerfile
+docker-compose*.yml
+*.md
+npm-debug.log
+pnpm-debug.log
