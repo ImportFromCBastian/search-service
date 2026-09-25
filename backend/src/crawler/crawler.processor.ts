@@ -1,15 +1,14 @@
 import * as vm from 'node:vm';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import type { Job } from 'bullmq';
 import * as cheerio from 'cheerio';
-import { Model, Types } from 'mongoose';
-import { CrawlLog, type CrawlLogDocument } from '../crawl-log/entities/crawl-log.entity';
-import { CrawlDocument, CrawledHydratedDocument } from '../document/entities/document.entity';
+import { Types } from 'mongoose';
+import { CrawlLogService } from '../crawl-log/crawl-log.service';
+import { DocumentService } from '../document/document.service';
 import { LOG_LEVELS, LogLevel, SNAPSHOT_STATUSES } from '../shared/crawl.enum';
-import { Site, type SiteDocument } from '../site/entities/site.entity';
-import { Snapshot, type SnapshotDocument } from '../snapshot/entities/snapshot.entity';
+import { SiteService } from '../site/site.service';
+import { SnapshotService } from '../snapshot/snapshot.service';
 import { CRAWLER_QUEUE_NAME } from './crawler.service';
 import {
   CrawlJobData,
@@ -25,10 +24,10 @@ export class CrawlerProcessor extends WorkerHost {
   private readonly logger = new Logger(CrawlerProcessor.name);
 
   constructor(
-    @InjectModel(Site.name) private readonly siteModel: Model<SiteDocument>,
-    @InjectModel(Snapshot.name) private readonly snapshotModel: Model<SnapshotDocument>,
-    @InjectModel(CrawlDocument.name) private readonly documentModel: Model<CrawledHydratedDocument>,
-    @InjectModel(CrawlLog.name) private readonly logModel: Model<CrawlLogDocument>,
+    private readonly siteService: SiteService,
+    private readonly snapshotService: SnapshotService,
+    private readonly documentService: DocumentService,
+    private readonly crawlLogService: CrawlLogService,
   ) {
     super();
   }
@@ -41,31 +40,20 @@ export class CrawlerProcessor extends WorkerHost {
 
     const startedAt = new Date();
 
-    // 1. Marcar snapshot como running
-    const snapshot = await this.snapshotModel.findOneAndUpdate(
-      { _id: snapshotObjectId },
-      { $set: { status: SNAPSHOT_STATUSES[1], startedAt } },
-      { new: true },
-    );
+    // 1. Marcar snapshot como running a través del servicio de dominio
+    const snapshot = await this.snapshotService.markRunning(snapshotObjectId, startedAt);
 
     if (!snapshot) {
       this.logger.error(`Snapshot ${snapshotId} no encontrado para procesar.`);
       return;
     }
 
-    // 2. Actualizar resumen en el sitio
-    await this.siteModel.updateOne(
-      { _id: siteObjectId },
-      {
-        $set: {
-          lastSnapshot: {
-            snapshotId: snapshotObjectId,
-            status: SNAPSHOT_STATUSES[1],
-            at: startedAt,
-          },
-        },
-      },
-    );
+    // 2. Actualizar resumen en el sitio a través del servicio de dominio
+    await this.siteService.updateLastSnapshot(siteObjectId, {
+      snapshotId: snapshotObjectId,
+      status: SNAPSHOT_STATUSES[1],
+      at: startedAt,
+    });
 
     await this.log(
       siteObjectId,
@@ -154,30 +142,18 @@ export class CrawlerProcessor extends WorkerHost {
       const finishedAt = new Date();
       const durationMs = finishedAt.getTime() - startedAt.getTime();
 
-      await this.snapshotModel.updateOne(
-        { _id: snapshotObjectId },
-        {
-          $set: {
-            status: SNAPSHOT_STATUSES[2],
-            documentCount: savedDocumentsCount,
-            finishedAt,
-            durationMs,
-          },
-        },
+      await this.snapshotService.markCompleted(
+        snapshotObjectId,
+        savedDocumentsCount,
+        finishedAt,
+        durationMs,
       );
 
-      await this.siteModel.updateOne(
-        { _id: siteObjectId },
-        {
-          $set: {
-            lastSnapshot: {
-              snapshotId: snapshotObjectId,
-              status: SNAPSHOT_STATUSES[2],
-              at: finishedAt,
-            },
-          },
-        },
-      );
+      await this.siteService.updateLastSnapshot(siteObjectId, {
+        snapshotId: snapshotObjectId,
+        status: SNAPSHOT_STATUSES[2],
+        at: finishedAt,
+      });
 
       await this.log(
         siteObjectId,
@@ -194,23 +170,13 @@ export class CrawlerProcessor extends WorkerHost {
 
       this.logger.error(`Error crítico en job de crawling: ${errMsg}`, globalErr);
 
-      await this.snapshotModel.updateOne(
-        { _id: snapshotObjectId },
-        { $set: { status: SNAPSHOT_STATUSES[3], error: errMsg, finishedAt, durationMs } },
-      );
+      await this.snapshotService.markFailed(snapshotObjectId, errMsg, finishedAt, durationMs);
 
-      await this.siteModel.updateOne(
-        { _id: siteObjectId },
-        {
-          $set: {
-            lastSnapshot: {
-              snapshotId: snapshotObjectId,
-              status: SNAPSHOT_STATUSES[3],
-              at: finishedAt,
-            },
-          },
-        },
-      );
+      await this.siteService.updateLastSnapshot(siteObjectId, {
+        snapshotId: snapshotObjectId,
+        status: SNAPSHOT_STATUSES[3],
+        at: finishedAt,
+      });
 
       await this.log(
         siteObjectId,
@@ -360,7 +326,7 @@ export class CrawlerProcessor extends WorkerHost {
   }
 
   /**
-   * Persiste el documento extraído en MongoDB.
+   * Persiste el documento extraído a través del servicio de dominio de Documentos.
    */
   private async persistDocument(data: PersistDocumentData): Promise<void> {
     const {
@@ -376,7 +342,7 @@ export class CrawlerProcessor extends WorkerHost {
       discoveredRawLinks,
     } = data;
 
-    await this.documentModel.create({
+    await this.documentService.createCrawledDocument({
       userId,
       siteId,
       snapshotId,
@@ -466,7 +432,7 @@ export class CrawlerProcessor extends WorkerHost {
     metadata?: Record<string, unknown>,
   ) {
     try {
-      await this.logModel.create({ siteId, snapshotId, level, message, url, metadata });
+      await this.crawlLogService.create({ siteId, snapshotId, level, message, url, metadata });
     } catch (err) {
       this.logger.error(`No se pudo guardar el crawl log: ${err}`);
     }

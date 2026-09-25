@@ -1,15 +1,23 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { CrawlLogService } from '../crawl-log/crawl-log.service';
 import { CrawlerService } from '../crawler/crawler.service';
-import { CascadeDeleteService } from '../shared/cascade-delete.service';
+import { DocumentService } from '../document/document.service';
 import {
   ACTIVE_SNAPSHOT_STATUSES,
   SNAPSHOT_STATUSES,
   SNAPSHOT_TRIGGERS,
 } from '../shared/crawl.enum';
 import type { PaginationDto } from '../shared/dto/pagination.dto';
-import { Site, type SiteDocument } from '../site/entities/site.entity';
+import { SiteService } from '../site/site.service';
 import type { CreateSnapshotDto } from './dto/create-snapshot.dto';
 import { Snapshot, type SnapshotDocument } from './entities/snapshot.entity';
 
@@ -17,19 +25,51 @@ import { Snapshot, type SnapshotDocument } from './entities/snapshot.entity';
 export class SnapshotService {
   constructor(
     @InjectModel(Snapshot.name) private readonly snapshotModel: Model<SnapshotDocument>,
-    @InjectModel(Site.name) private readonly siteModel: Model<SiteDocument>,
+    @Inject(forwardRef(() => SiteService))
+    private readonly siteService: SiteService,
     private readonly crawlerService: CrawlerService,
-    private readonly cascadeDeleteService: CascadeDeleteService,
+    @Inject(forwardRef(() => DocumentService))
+    private readonly documentService: DocumentService,
+    private readonly crawlLogService: CrawlLogService,
   ) {}
 
-  async create(userId: Types.ObjectId, createSnapshotDto: CreateSnapshotDto) {
-    
-    const siteObjectId = new Types.ObjectId(createSnapshotDto.siteId);
-    const site = await this.siteModel.findOne({ _id: siteObjectId, userId }).exec();
+  async createInitialForSite(data: {
+    siteId: Types.ObjectId;
+    userId: Types.ObjectId;
+    url: string;
+    depth: number;
+    frequency: string;
+    extractor: string;
+    pageResolver?: string;
+  }): Promise<SnapshotDocument> {
+    const snapshot = new this.snapshotModel({
+      siteId: data.siteId,
+      userId: data.userId,
+      status: SNAPSHOT_STATUSES[0],
+      trigger: SNAPSHOT_TRIGGERS[0],
+      configUsed: {
+        url: data.url,
+        depth: data.depth,
+        frequency: data.frequency,
+        extractor: data.extractor,
+        pageResolver: data.pageResolver,
+      },
+      documentCount: 0,
+    });
 
-    if (!site) {
-      throw new NotFoundException(`Sitio con ID ${siteId} no encontrado`);
-    }
+    await snapshot.save();
+
+    // Encolar el crawler job inicial
+    await this.crawlerService.enqueueCrawlJob(data.siteId, snapshot._id, data.userId);
+
+    return snapshot;
+  }
+
+  async create(userId: Types.ObjectId, createSnapshotDto: CreateSnapshotDto) {
+    const { siteId } = createSnapshotDto;
+
+    const siteObjectId = new Types.ObjectId(siteId);
+    const site = await this.siteService.findOne(userId, siteObjectId);
 
     // 1. Validar que no haya un snapshot en curso o pendiente para este sitio
     const activeSnapshot = await this.snapshotModel
@@ -74,13 +114,12 @@ export class SnapshotService {
       throw err;
     }
 
-    // 3. Actualizar resumen en el sitio
-    site.lastSnapshot = {
+    // 3. Actualizar resumen en el sitio a través del servicio de dominio
+    await this.siteService.updateLastSnapshot(siteObjectId, {
       snapshotId: snapshot._id,
       status: ACTIVE_SNAPSHOT_STATUSES[0],
       at: new Date(),
-    };
-    await site.save();
+    });
 
     // 4. Encolar en BullMQ
     await this.crawlerService.enqueueCrawlJob(siteObjectId, snapshot._id, userId);
@@ -145,20 +184,68 @@ export class SnapshotService {
     await snapshot.save();
 
     // Actualizar site lastSnapshot
-    await this.siteModel.updateOne(
-      { _id: snapshot.siteId },
+    await this.siteService.updateLastSnapshot(snapshot.siteId, {
+      snapshotId: snapshot._id,
+      status: SNAPSHOT_STATUSES[3],
+      at: finishedAt,
+    });
+
+    return { success: true, message: `Snapshot ${id} cancelado correctamente` };
+  }
+
+  async markRunning(snapshotId: Types.ObjectId, startedAt: Date): Promise<SnapshotDocument | null> {
+    return await this.snapshotModel.findOneAndUpdate(
+      { _id: snapshotId },
+      { $set: { status: SNAPSHOT_STATUSES[1], startedAt } },
+      { new: true },
+    );
+  }
+
+  async markCompleted(
+    snapshotId: Types.ObjectId,
+    documentCount: number,
+    finishedAt: Date,
+    durationMs: number,
+  ): Promise<void> {
+    await this.snapshotModel.updateOne(
+      { _id: snapshotId },
       {
         $set: {
-          lastSnapshot: {
-            snapshotId: snapshot._id,
-            status: SNAPSHOT_STATUSES[3],
-            at: finishedAt,
-          },
+          status: SNAPSHOT_STATUSES[2],
+          documentCount,
+          finishedAt,
+          durationMs,
         },
       },
     );
+  }
 
-    return { success: true, message: `Snapshot ${id} cancelado correctamente` };
+  async markFailed(
+    snapshotId: Types.ObjectId,
+    error: string,
+    finishedAt: Date,
+    durationMs: number,
+  ): Promise<void> {
+    await this.snapshotModel.updateOne(
+      { _id: snapshotId },
+      {
+        $set: {
+          status: SNAPSHOT_STATUSES[3],
+          error,
+          finishedAt,
+          durationMs,
+        },
+      },
+    );
+  }
+
+  async deleteManyBySite(siteId: Types.ObjectId): Promise<void> {
+    // Borrado jerárquico: primero documentos y logs hijos de este sitio, luego snapshots
+    await Promise.all([
+      this.documentService.deleteManyBySite(siteId),
+      this.crawlLogService.deleteManyBySite(siteId),
+    ]);
+    await this.snapshotModel.deleteMany({ siteId }).exec();
   }
 
   async remove(userId: Types.ObjectId, id: Types.ObjectId) {
@@ -168,8 +255,11 @@ export class SnapshotService {
       throw new NotFoundException(`Snapshot con ID ${id} no encontrado`);
     }
 
-    // Borrado en cascada: documentos y logs del snapshot antes de borrar el snapshot
-    await this.cascadeDeleteService.deleteBySnapshot(id);
+    // Borrado jerárquico: documentos y logs del snapshot antes de borrar el snapshot
+    await Promise.all([
+      this.documentService.deleteManyBySnapshot(id),
+      this.crawlLogService.deleteManyBySnapshot(id),
+    ]);
     await this.snapshotModel.deleteOne({ _id: id }).exec();
 
     return { success: true, message: `Snapshot ${id} y sus datos eliminados` };

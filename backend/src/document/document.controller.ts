@@ -45,7 +45,12 @@ export class DocumentController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener detalle completo de un documento indexado' })
-  @ApiParam({ name: 'id', description: 'ID del documento (ObjectId)' })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID del documento  ',
+    example: '66f000000000000000000003',
+  })
   @ApiResponse({ status: 200, description: 'Detalle del documento', type: DocumentResponseDto })
   @ApiResponse({ status: 400, description: 'ID con formato inválido' })
   async findOne(

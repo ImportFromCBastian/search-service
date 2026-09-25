@@ -13,6 +13,7 @@
     "start:prod": "node dist/main",
     "lint": "biome lint .",
     "check": "biome check --write .",
+    "write-unsafe": "biome check --write --unsafe .",
     "ci": "biome ci .",
     "test": "jest",
     "test:watch": "jest --watch",

@@ -31,7 +31,12 @@ export class SnapshotController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener el detalle y métricas de un snapshot por ID' })
-  @ApiParam({ name: 'id', description: 'ID del snapshot (ObjectId)' })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID del snapshot  ',
+    example: '66f000000000000000000002',
+  })
   @ApiResponse({ status: 200, description: 'Detalle del snapshot', type: SnapshotResponseDto })
   @ApiResponse({ status: 400, description: 'ID con formato inválido' })
   async findOne(
@@ -43,7 +48,12 @@ export class SnapshotController {
 
   @Post(':id/cancel')
   @ApiOperation({ summary: 'Cancelar un snapshot que se encuentre en ejecución o pendiente' })
-  @ApiParam({ name: 'id', description: 'ID del snapshot a cancelar (ObjectId)' })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID del snapshot a cancelar  ',
+    example: '66f000000000000000000002',
+  })
   @ApiResponse({ status: 400, description: 'ID con formato inválido' })
   async cancel(
     @CurrentUser() userId: Types.ObjectId,
@@ -56,7 +66,12 @@ export class SnapshotController {
   @ApiOperation({
     summary: 'Eliminar definitivamente un snapshot y todos sus documentos y logs asociados',
   })
-  @ApiParam({ name: 'id', description: 'ID del snapshot a eliminar (ObjectId)' })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID del snapshot a eliminar  ',
+    example: '66f000000000000000000002',
+  })
   @ApiResponse({
     status: 200,
     description: 'Snapshot y sus datos eliminados exitosamente',

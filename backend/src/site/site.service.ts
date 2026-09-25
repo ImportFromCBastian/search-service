@@ -1,12 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { CrawlerService } from '../crawler/crawler.service';
-import { CascadeDeleteService } from '../shared/cascade-delete.service';
-import { SNAPSHOT_STATUSES, SNAPSHOT_TRIGGERS } from '../shared/crawl.enum';
 import type { PaginationDto } from '../shared/dto/pagination.dto';
 import { generateApiKey } from '../shared/utils/api-key.util';
-import { Snapshot, type SnapshotDocument } from '../snapshot/entities/snapshot.entity';
 import { SnapshotService } from '../snapshot/snapshot.service';
 import type { CreateSiteDto } from './dto/create-site.dto';
 import type { UpdateSiteDto } from './dto/update-site.dto';
@@ -16,52 +12,40 @@ import { Site, type SiteDocument } from './entities/site.entity';
 export class SiteService {
   constructor(
     @InjectModel(Site.name) private readonly siteModel: Model<SiteDocument>,
-    @InjectModel(Snapshot.name) private readonly snapshotModel: Model<SnapshotDocument>,
+    @Inject(forwardRef(() => SnapshotService))
     private readonly snapshotService: SnapshotService,
-    private readonly crawlerService: CrawlerService,
-    private readonly cascadeDeleteService: CascadeDeleteService,
   ) {}
 
   async create(userId: Types.ObjectId, createSiteDto: CreateSiteDto) {
     const { rawKey, hash, prefix } = generateApiKey();
+    const siteId = new Types.ObjectId();
 
+    // 1. Crear snapshot inicial a través del servicio de dominio de Snapshot
+    const initialSnapshot = await this.snapshotService.createInitialForSite({
+      siteId,
+      userId,
+      url: createSiteDto.url,
+      depth: createSiteDto.depth,
+      frequency: createSiteDto.frequency,
+      extractor: createSiteDto.extractor,
+      pageResolver: createSiteDto.pageResolver,
+    });
+
+    // 2. Persistir el sitio con su lastSnapshot ya asignado en un solo roundtrip (sin escrituras redundantes)
     const site = new this.siteModel({
+      _id: siteId,
       userId,
       ...createSiteDto,
       apiKeyHash: hash,
       apiKeyPrefix: prefix,
-    });
-
-    await site.save();
-
-    // 1. Crear snapshot inicial automático para el nuevo sitio
-    const initialSnapshot = new this.snapshotModel({
-      siteId: site._id,
-      userId,
-      status: SNAPSHOT_STATUSES[0],
-      trigger: SNAPSHOT_TRIGGERS[0],
-      configUsed: {
-        url: site.url,
-        depth: site.depth,
-        frequency: site.frequency,
-        extractor: site.extractor,
-        pageResolver: site.pageResolver,
+      lastSnapshot: {
+        snapshotId: initialSnapshot._id,
+        status: initialSnapshot.status,
+        at: initialSnapshot.createdAt || new Date(),
       },
-      documentCount: 0,
     });
 
-    await initialSnapshot.save();
-
-    // 2. Asociar el snapshot inicial como lastSnapshot en el sitio
-    site.lastSnapshot = {
-      snapshotId: initialSnapshot._id,
-      status: SNAPSHOT_STATUSES[0],
-      at: new Date(),
-    };
     await site.save();
-
-    // 3. Encolar el job en BullMQ
-    await this.crawlerService.enqueueCrawlJob(site._id, initialSnapshot._id, userId);
 
     const siteObj = site.toObject();
     return {
@@ -73,13 +57,33 @@ export class SiteService {
   }
 
   async findAllBySite(userId: Types.ObjectId, siteId: Types.ObjectId, pagination: PaginationDto) {
-    try {
-      await this.findOne(userId, siteId);
-    } catch (_) {
-      // Manejado por findOne
-    }
+    // Validar existencia y propiedad del sitio
+    await this.findOne(userId, siteId);
 
-    return await this.snapshotModel.(userId, siteId, pagination);
+    return await this.snapshotService.findAllBySite(userId, siteId, pagination);
+  }
+
+  async findById(id: Types.ObjectId): Promise<SiteDocument> {
+    const site = await this.siteModel.findById(id).lean().exec();
+    if (!site) {
+      throw new NotFoundException(`Sitio con id ${id} no encontrado`);
+    }
+    return site as SiteDocument;
+  }
+
+  async findByApiKeyHash(apiKeyHash: string): Promise<SiteDocument | null> {
+    return await this.siteModel.findOne({ apiKeyHash }).exec();
+  }
+
+  async updateLastSnapshot(
+    siteId: Types.ObjectId,
+    lastSnapshot: {
+      snapshotId: Types.ObjectId;
+      status: string;
+      at: Date;
+    },
+  ): Promise<void> {
+    await this.siteModel.updateOne({ _id: siteId }, { $set: { lastSnapshot } }).exec();
   }
 
   async findAll(userId: Types.ObjectId, pagination: PaginationDto) {
@@ -140,8 +144,8 @@ export class SiteService {
       throw new NotFoundException(`Sitio con id ${id} no encontrado`);
     }
 
-    // Borrado en cascada
-    await this.cascadeDeleteService.deleteBySite(id);
+    // Cascada jerárquica de dominio: el servicio de Snapshots limpia snapshots, documentos y logs asociados
+    await this.snapshotService.deleteManyBySite(id);
 
     return { success: true, message: `Sitio ${id} y sus datos relacionados eliminados` };
   }

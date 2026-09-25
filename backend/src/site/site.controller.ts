@@ -41,7 +41,12 @@ export class SiteController {
   }
   @Get(':id/snapshots')
   @ApiOperation({ summary: 'Listar el historial cronológico de snapshots de un sitio' })
-  @ApiParam({ name: 'id', description: 'ID del sitio a consultar (ObjectId)' })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID del sitio a consultar',
+    example: '66f000000000000000000001',
+  })
   @ApiResponse({ status: 200, description: 'Historial de snapshots', type: [SnapshotResponseDto] })
   @ApiResponse({ status: 400, description: 'ID con formato inválido' })
   async findAllBySite(
@@ -54,7 +59,12 @@ export class SiteController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Consultar configuración detallada de un sitio por ID' })
-  @ApiParam({ name: 'id', description: 'ID del sitio (ObjectId)' })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID del sitio',
+    example: '66f000000000000000000001',
+  })
   @ApiResponse({ status: 200, description: 'Detalle del sitio', type: SiteResponseDto })
   @ApiResponse({ status: 400, description: 'ID con formato inválido' })
   async findOne(
@@ -66,7 +76,12 @@ export class SiteController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar configuración, URL o funciones de extracción de un sitio' })
-  @ApiParam({ name: 'id', description: 'ID del sitio (ObjectId)' })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID del sitio',
+    example: '66f000000000000000000001',
+  })
   @ApiResponse({ status: 200, description: 'Sitio actualizado', type: SiteResponseDto })
   @ApiResponse({ status: 400, description: 'ID con formato inválido' })
   async update(
@@ -81,7 +96,12 @@ export class SiteController {
   @ApiOperation({
     summary: 'Eliminar un sitio junto con todos sus snapshots, logs y documentos indexados',
   })
-  @ApiParam({ name: 'id', description: 'ID del sitio (ObjectId)' })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID del sitio a eliminar',
+    example: '66f000000000000000000001',
+  })
   @ApiResponse({
     status: 200,
     description: 'Sitio y todos sus datos relacionados eliminados exitosamente',
@@ -97,7 +117,12 @@ export class SiteController {
 
   @Post(':id/regenerate-api-key')
   @ApiOperation({ summary: 'Invalidar y regenerar una nueva API Key para el sitio' })
-  @ApiParam({ name: 'id', description: 'ID del sitio (ObjectId)' })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID del sitio',
+    example: '66f000000000000000000001',
+  })
   @ApiResponse({ status: 400, description: 'ID con formato inválido' })
   async regenerateApiKey(
     @CurrentUser() userId: Types.ObjectId,

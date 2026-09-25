@@ -1,12 +1,10 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Site, type SiteDocument } from '../../site/entities/site.entity';
+import { SiteService } from '../../site/site.service';
 import { hashApiKey } from '../utils/api-key.util';
 
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
-  constructor(@InjectModel(Site.name) private readonly siteModel: Model<SiteDocument>) {}
+  constructor(private readonly siteService: SiteService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -17,7 +15,7 @@ export class ApiKeyGuard implements CanActivate {
     }
 
     const hash = hashApiKey(apiKey);
-    const site = await this.siteModel.findOne({ apiKeyHash: hash }).exec();
+    const site = await this.siteService.findByApiKeyHash(hash);
 
     if (!site) {
       throw new UnauthorizedException('API Key inválida o no registrada.');
