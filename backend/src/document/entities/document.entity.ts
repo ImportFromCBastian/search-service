@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { type HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
 
-/** Datos técnicos de la visita a la página (lo que muestra "Respuesta del crawling job"). */
+/** Datos técnicos de la visita a la página. */
 @Schema({ _id: false })
 export class CrawlInfo {
   @Prop({ type: Number })
@@ -26,7 +26,6 @@ export class CrawlDocument {
   @Prop({ type: Types.ObjectId, ref: 'Snapshot', required: true })
   snapshotId!: Types.ObjectId;
 
-  // Los 3 campos que devuelve el extractor de ejemplo del mock
   @Prop({ type: String, required: true })
   name!: string;
 
@@ -52,5 +51,5 @@ export class CrawlDocument {
   createdAt!: Date;
 }
 
-export type CrawlDocumentDocument = HydratedDocument<CrawlDocument>;
+export type CrawledHydratedDocument = HydratedDocument<CrawlDocument>;
 export const CrawlDocumentSchema = SchemaFactory.createForClass(CrawlDocument);

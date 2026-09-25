@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { CrawlLog, type CrawlLogDocument } from '../crawl-log/entities/crawl-log.entity';
 import { CrawlerService } from '../crawler/crawler.service';
-import { CrawlDocument, type CrawlDocumentDocument } from '../document/entities/document.entity';
+import { CascadeDeleteService } from '../shared/cascade-delete.service';
+import { SNAPSHOT_STATUSES, SNAPSHOT_TRIGGERS } from '../shared/crawl.enum';
 import type { PaginationDto } from '../shared/dto/pagination.dto';
 import { generateApiKey } from '../shared/utils/api-key.util';
 import { Snapshot, type SnapshotDocument } from '../snapshot/entities/snapshot.entity';
+import { SnapshotService } from '../snapshot/snapshot.service';
 import type { CreateSiteDto } from './dto/create-site.dto';
 import type { UpdateSiteDto } from './dto/update-site.dto';
 import { Site, type SiteDocument } from './entities/site.entity';
@@ -16,9 +17,9 @@ export class SiteService {
   constructor(
     @InjectModel(Site.name) private readonly siteModel: Model<SiteDocument>,
     @InjectModel(Snapshot.name) private readonly snapshotModel: Model<SnapshotDocument>,
-    @InjectModel(CrawlDocument.name) private readonly documentModel: Model<CrawlDocumentDocument>,
-    @InjectModel(CrawlLog.name) private readonly logModel: Model<CrawlLogDocument>,
+    private readonly snapshotService: SnapshotService,
     private readonly crawlerService: CrawlerService,
+    private readonly cascadeDeleteService: CascadeDeleteService,
   ) {}
 
   async create(userId: Types.ObjectId, createSiteDto: CreateSiteDto) {
@@ -37,8 +38,8 @@ export class SiteService {
     const initialSnapshot = new this.snapshotModel({
       siteId: site._id,
       userId,
-      status: 'pending',
-      trigger: 'manual',
+      status: SNAPSHOT_STATUSES[0],
+      trigger: SNAPSHOT_TRIGGERS[0],
       configUsed: {
         url: site.url,
         depth: site.depth,
@@ -54,7 +55,7 @@ export class SiteService {
     // 2. Asociar el snapshot inicial como lastSnapshot en el sitio
     site.lastSnapshot = {
       snapshotId: initialSnapshot._id,
-      status: 'pending',
+      status: SNAPSHOT_STATUSES[0],
       at: new Date(),
     };
     await site.save();
@@ -69,6 +70,16 @@ export class SiteService {
       userId: site.userId.toString(),
       apiKey: rawKey,
     };
+  }
+
+  async findAllBySite(userId: Types.ObjectId, siteId: Types.ObjectId, pagination: PaginationDto) {
+    try {
+      await this.findOne(userId, siteId);
+    } catch (_) {
+      // Manejado por findOne
+    }
+
+    return await this.snapshotModel.(userId, siteId, pagination);
   }
 
   async findAll(userId: Types.ObjectId, pagination: PaginationDto) {
@@ -95,15 +106,8 @@ export class SiteService {
     };
   }
 
-  async findOne(userId: Types.ObjectId, id: string) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new NotFoundException(`Sitio con id ${id} no válido`);
-    }
-
-    const site = await this.siteModel
-      .findOne({ _id: new Types.ObjectId(id), userId })
-      .lean()
-      .exec();
+  async findOne(userId: Types.ObjectId, id: Types.ObjectId) {
+    const site = await this.siteModel.findOne({ _id: id, userId }).lean().exec();
 
     if (!site) {
       throw new NotFoundException(`Sitio con id ${id} no encontrado`);
@@ -112,14 +116,10 @@ export class SiteService {
     return site;
   }
 
-  async update(userId: Types.ObjectId, id: string, updateSiteDto: UpdateSiteDto) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new NotFoundException(`Sitio con id ${id} no válido`);
-    }
-
+  async update(userId: Types.ObjectId, id: Types.ObjectId, updateSiteDto: UpdateSiteDto) {
     const updated = await this.siteModel
       .findOneAndUpdate(
-        { _id: new Types.ObjectId(id), userId },
+        { _id: id, userId },
         { $set: updateSiteDto },
         { new: true, runValidators: true },
       )
@@ -133,38 +133,25 @@ export class SiteService {
     return updated;
   }
 
-  async remove(userId: Types.ObjectId, id: string) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new NotFoundException(`Sitio con id ${id} no válido`);
-    }
-
-    const siteId = new Types.ObjectId(id);
-    const deleted = await this.siteModel.findOneAndDelete({ _id: siteId, userId }).exec();
+  async remove(userId: Types.ObjectId, id: Types.ObjectId) {
+    const deleted = await this.siteModel.findOneAndDelete({ _id: id, userId }).exec();
 
     if (!deleted) {
       throw new NotFoundException(`Sitio con id ${id} no encontrado`);
     }
 
-    // Limpieza en cascada de snapshots, documentos y logs asociados
-    await Promise.all([
-      this.snapshotModel.deleteMany({ siteId }).exec(),
-      this.documentModel.deleteMany({ siteId }).exec(),
-      this.logModel.deleteMany({ siteId }).exec(),
-    ]);
+    // Borrado en cascada
+    await this.cascadeDeleteService.deleteBySite(id);
 
     return { success: true, message: `Sitio ${id} y sus datos relacionados eliminados` };
   }
 
-  async regenerateApiKey(userId: Types.ObjectId, id: string) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new NotFoundException(`Sitio con id ${id} no válido`);
-    }
-
+  async regenerateApiKey(userId: Types.ObjectId, id: Types.ObjectId) {
     const { rawKey, hash, prefix } = generateApiKey();
 
     const site = await this.siteModel
       .findOneAndUpdate(
-        { _id: new Types.ObjectId(id), userId },
+        { _id: id, userId },
         { $set: { apiKeyHash: hash, apiKeyPrefix: prefix } },
         { new: true },
       )

@@ -6,21 +6,19 @@ import type { Job } from 'bullmq';
 import * as cheerio from 'cheerio';
 import { Model, Types } from 'mongoose';
 import { CrawlLog, type CrawlLogDocument } from '../crawl-log/entities/crawl-log.entity';
-import { CrawlDocument, type CrawlDocumentDocument } from '../document/entities/document.entity';
+import { CrawlDocument, CrawledHydratedDocument } from '../document/entities/document.entity';
+import { LOG_LEVELS, LogLevel, SNAPSHOT_STATUSES } from '../shared/crawl.enum';
 import { Site, type SiteDocument } from '../site/entities/site.entity';
 import { Snapshot, type SnapshotDocument } from '../snapshot/entities/snapshot.entity';
-import { CRAWLER_QUEUE_NAME, type CrawlJobData } from './crawler.service';
-
-interface CrawlQueueItem {
-  url: string;
-  depth: number;
-}
-
-interface ExtractedData {
-  name?: string;
-  description?: string;
-  extra?: Record<string, unknown>;
-}
+import { CRAWLER_QUEUE_NAME } from './crawler.service';
+import {
+  CrawlJobData,
+  CrawlQueueItem,
+  DiscoveredLinks,
+  ExtractedData,
+  PageResult,
+  PersistDocumentData,
+} from './types/crawles';
 
 @Processor(CRAWLER_QUEUE_NAME)
 export class CrawlerProcessor extends WorkerHost {
@@ -29,7 +27,7 @@ export class CrawlerProcessor extends WorkerHost {
   constructor(
     @InjectModel(Site.name) private readonly siteModel: Model<SiteDocument>,
     @InjectModel(Snapshot.name) private readonly snapshotModel: Model<SnapshotDocument>,
-    @InjectModel(CrawlDocument.name) private readonly documentModel: Model<CrawlDocumentDocument>,
+    @InjectModel(CrawlDocument.name) private readonly documentModel: Model<CrawledHydratedDocument>,
     @InjectModel(CrawlLog.name) private readonly logModel: Model<CrawlLogDocument>,
   ) {
     super();
@@ -46,7 +44,7 @@ export class CrawlerProcessor extends WorkerHost {
     // 1. Marcar snapshot como running
     const snapshot = await this.snapshotModel.findOneAndUpdate(
       { _id: snapshotObjectId },
-      { $set: { status: 'running', startedAt } },
+      { $set: { status: SNAPSHOT_STATUSES[1], startedAt } },
       { new: true },
     );
 
@@ -62,7 +60,7 @@ export class CrawlerProcessor extends WorkerHost {
         $set: {
           lastSnapshot: {
             snapshotId: snapshotObjectId,
-            status: 'running',
+            status: SNAPSHOT_STATUSES[1],
             at: startedAt,
           },
         },
@@ -72,7 +70,7 @@ export class CrawlerProcessor extends WorkerHost {
     await this.log(
       siteObjectId,
       snapshotObjectId,
-      'info',
+      LOG_LEVELS[0],
       'Inicio de crawling job',
       snapshot.configUsed.url,
     );
@@ -87,148 +85,62 @@ export class CrawlerProcessor extends WorkerHost {
 
       while (queue.length > 0) {
         const item = queue.shift();
-        if (!item) {
-          break;
-        }
+        if (!item) break;
 
         const normalizedUrl = this.normalizeUrl(item.url);
-
-        if (visited.has(normalizedUrl)) {
-          continue;
-        }
+        if (visited.has(normalizedUrl)) continue;
         visited.add(normalizedUrl);
 
         await this.log(
           siteObjectId,
           snapshotObjectId,
-          'info',
+          LOG_LEVELS[0],
           `Visitando URL [Profundidad ${item.depth}]`,
           normalizedUrl,
         );
 
-        const startTime = Date.now();
-        let response: Response;
-        try {
-          response = await fetch(normalizedUrl, {
-            headers: {
-              'User-Agent': 'SearchService-Crawler/1.0 (+http://localhost:3000/api)',
-              Accept: 'text/html,application/xhtml+xml',
-            },
-            signal: AbortSignal.timeout(10000),
-          });
-        } catch (fetchErr: unknown) {
-          const errMsg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
-          await this.log(
-            siteObjectId,
-            snapshotObjectId,
-            'warn',
-            `Fallo al descargar página: ${errMsg}`,
-            normalizedUrl,
-          );
-          continue;
-        }
+        // 3. Fetch de la página
+        const pageResult = await this.fetchPage(siteObjectId, snapshotObjectId, normalizedUrl);
+        if (!pageResult) continue;
 
-        const executionTimeMs = Date.now() - startTime;
-        const statusCode = response.status;
-
-        if (!response.ok) {
-          await this.log(
-            siteObjectId,
-            snapshotObjectId,
-            'warn',
-            `Página respondió con código HTTP ${statusCode}`,
-            normalizedUrl,
-            { statusCode, executionTimeMs },
-          );
-          continue;
-        }
-
-        const html = await response.text();
+        const { html, statusCode, executionTimeMs } = pageResult;
         const $ = cheerio.load(html);
 
-        // 3. Ejecutar Extractor de usuario en sandbox aislado
-        let extractedData: ExtractedData = {};
+        // 4. Extracción de datos con el extractor del usuario
+        const extractedData = await this.extractData(
+          $,
+          normalizedUrl,
+          extractor,
+          siteObjectId,
+          snapshotObjectId,
+        );
 
-        try {
-          extractedData = this.executeExtractorSandbox(extractor, $, normalizedUrl);
-        } catch (sandboxErr: unknown) {
-          const errMsg = sandboxErr instanceof Error ? sandboxErr.message : String(sandboxErr);
-          await this.log(
-            siteObjectId,
-            snapshotObjectId,
-            'error',
-            `Error en extractor de usuario: ${errMsg}`,
-            normalizedUrl,
-          );
-          extractedData = {
-            name: $('title').text().trim() || normalizedUrl,
-            description: $('meta[name="description"]').attr('content')?.trim() || '',
-          };
-        }
+        // 5. Descubrimiento y filtrado de enlaces
+        const { discoveredRawLinks, linksToQueue } = await this.discoverLinks(
+          $,
+          initialParsed,
+          normalizedUrl,
+          pageResolver,
+          siteObjectId,
+          snapshotObjectId,
+        );
 
-        // 4. Descubrir enlaces
-        const discoveredRawLinks: string[] = [];
-        $('a[href]').each((_, el) => {
-          const href = $(el).attr('href');
-          if (href) {
-            try {
-              const resolved = new URL(href, normalizedUrl);
-              // Mantenerse en el mismo dominio
-              if (
-                resolved.protocol.startsWith('http') &&
-                resolved.hostname === initialParsed.hostname
-              ) {
-                resolved.hash = ''; // Descartar anclas
-                discoveredRawLinks.push(resolved.href);
-              }
-            } catch {
-              // URL inválida, ignorar
-            }
-          }
-        });
-
-        // 5. Filtrar con pageResolver si existe
-        let linksToQueue = discoveredRawLinks;
-        if (pageResolver && pageResolver.trim().length > 0) {
-          try {
-            linksToQueue = this.executePageResolverSandbox(
-              pageResolver,
-              discoveredRawLinks,
-              normalizedUrl,
-            );
-          } catch (resolverErr: unknown) {
-            const errMsg = resolverErr instanceof Error ? resolverErr.message : String(resolverErr);
-            await this.log(
-              siteObjectId,
-              snapshotObjectId,
-              'warn',
-              `Error en pageResolver: ${errMsg}`,
-              normalizedUrl,
-            );
-          }
-        }
-
-        // 6. Guardar documento extraído
-        await this.documentModel.create({
+        // 6. Persistencia del documento indexado
+        await this.persistDocument({
           userId: userObjectId,
           siteId: siteObjectId,
           snapshotId: snapshotObjectId,
-          name: extractedData.name || $('title').text().trim() || normalizedUrl,
-          url: normalizedUrl,
-          description: extractedData.description || '',
-          extra: extractedData.extra || {},
+          extractedData,
+          $,
+          normalizedUrl,
+          statusCode,
+          executionTimeMs,
           depth: item.depth,
-          discoveredLinks: discoveredRawLinks,
-          crawl: {
-            statusCode,
-            executionTimeMs,
-            fetchedAt: new Date(),
-          },
+          discoveredRawLinks,
         });
-
         savedDocumentsCount++;
 
-        // 7. Encolar siguientes enlaces si la profundidad lo permite
+        // 7. Encolar siguiente nivel si la profundidad lo permite
         if (item.depth < maxDepth) {
           for (const nextUrl of linksToQueue) {
             if (!visited.has(this.normalizeUrl(nextUrl))) {
@@ -246,7 +158,7 @@ export class CrawlerProcessor extends WorkerHost {
         { _id: snapshotObjectId },
         {
           $set: {
-            status: 'completed',
+            status: SNAPSHOT_STATUSES[2],
             documentCount: savedDocumentsCount,
             finishedAt,
             durationMs,
@@ -260,7 +172,7 @@ export class CrawlerProcessor extends WorkerHost {
           $set: {
             lastSnapshot: {
               snapshotId: snapshotObjectId,
-              status: 'completed',
+              status: SNAPSHOT_STATUSES[2],
               at: finishedAt,
             },
           },
@@ -270,7 +182,7 @@ export class CrawlerProcessor extends WorkerHost {
       await this.log(
         siteObjectId,
         snapshotObjectId,
-        'info',
+        LOG_LEVELS[0],
         `Crawling finalizado exitosamente. ${savedDocumentsCount} documentos indexados.`,
         undefined,
         { savedDocumentsCount, durationMs },
@@ -284,14 +196,7 @@ export class CrawlerProcessor extends WorkerHost {
 
       await this.snapshotModel.updateOne(
         { _id: snapshotObjectId },
-        {
-          $set: {
-            status: 'failed',
-            error: errMsg,
-            finishedAt,
-            durationMs,
-          },
-        },
+        { $set: { status: SNAPSHOT_STATUSES[3], error: errMsg, finishedAt, durationMs } },
       );
 
       await this.siteModel.updateOne(
@@ -300,7 +205,7 @@ export class CrawlerProcessor extends WorkerHost {
           $set: {
             lastSnapshot: {
               snapshotId: snapshotObjectId,
-              status: 'failed',
+              status: SNAPSHOT_STATUSES[3],
               at: finishedAt,
             },
           },
@@ -310,27 +215,187 @@ export class CrawlerProcessor extends WorkerHost {
       await this.log(
         siteObjectId,
         snapshotObjectId,
-        'error',
+        LOG_LEVELS[2],
         `Fallo crítico en el crawling: ${errMsg}`,
       );
     }
   }
 
-  private normalizeUrl(rawUrl: string): string {
+  /**
+   * Realiza el fetch HTTP de una URL.
+   * Loguea warns ante errores de red.
+   * Retorna null si la página no puede procesarse.
+   */
+  private async fetchPage(
+    siteId: Types.ObjectId,
+    snapshotId: Types.ObjectId,
+    url: string,
+  ): Promise<PageResult | null> {
+    const startTime = Date.now();
+
+    let response: Response;
     try {
-      const u = new URL(rawUrl);
-      u.hash = '';
-      if (u.pathname.endsWith('/') && u.pathname.length > 1) {
-        u.pathname = u.pathname.slice(0, -1);
-      }
-      return u.href;
-    } catch {
-      return rawUrl;
+      response = await fetch(url, {
+        headers: {
+          'User-Agent': 'SearchService-Crawler/1.0 (+http://localhost:3000/api)',
+          Accept: 'text/html,application/xhtml+xml',
+        },
+        signal: AbortSignal.timeout(10000),
+      });
+    } catch (fetchErr: unknown) {
+      const errMsg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      await this.log(
+        siteId,
+        snapshotId,
+        LOG_LEVELS[1],
+        `Fallo al descargar página: ${errMsg}`,
+        url,
+      );
+      return null;
+    }
+
+    const executionTimeMs = Date.now() - startTime;
+    const statusCode = response.status;
+
+    if (!response.ok) {
+      await this.log(
+        siteId,
+        snapshotId,
+        LOG_LEVELS[1],
+        `Página respondió con código HTTP ${statusCode}`,
+        url,
+        { statusCode, executionTimeMs },
+      );
+      return null;
+    }
+
+    const html = await response.text();
+    return { html, statusCode, executionTimeMs };
+  }
+
+  /**
+   * Ejecuta el extractor del usuario en un sandbox aislado.
+   * Si el sandbox lanza un error, loguea y retorna un fallback con el <title> de la página.
+   */
+  private async extractData(
+    $: cheerio.CheerioAPI,
+    url: string,
+    extractor: string,
+    siteId: Types.ObjectId,
+    snapshotId: Types.ObjectId,
+  ): Promise<ExtractedData> {
+    try {
+      return this.executeExtractorSandbox(extractor, $, url);
+    } catch (sandboxErr: unknown) {
+      const errMsg = sandboxErr instanceof Error ? sandboxErr.message : String(sandboxErr);
+      await this.log(
+        siteId,
+        snapshotId,
+        LOG_LEVELS[2],
+        `Error en extractor de usuario: ${errMsg}`,
+        url,
+      );
+      return {
+        name: $('title').text().trim() || url,
+        description: $('meta[name="description"]').attr('content')?.trim() || '',
+      };
     }
   }
 
+  /**
+   * Recorre todos los enlaces <a[href]> de la página, filtra por mismo dominio
+   * y aplica el pageResolver del usuario si está configurado.
+   * Retorna tanto los links crudos descubiertos como los links a encolar.
+   */
+  private async discoverLinks(
+    $: cheerio.CheerioAPI,
+    initialParsed: URL,
+    currentUrl: string,
+    pageResolver: string | undefined,
+    siteId: Types.ObjectId,
+    snapshotId: Types.ObjectId,
+  ): Promise<DiscoveredLinks> {
+    const discoveredRawLinks: string[] = [];
+
+    $('a[href]').each((_, el) => {
+      const href = $(el).attr('href');
+      if (href) {
+        try {
+          const resolved = new URL(href, currentUrl);
+          if (
+            resolved.protocol.startsWith('http') &&
+            resolved.hostname === initialParsed.hostname
+          ) {
+            resolved.hash = '';
+            discoveredRawLinks.push(resolved.href);
+          }
+        } catch {
+          // URL inválida
+        }
+      }
+    });
+
+    let linksToQueue = discoveredRawLinks;
+
+    if (pageResolver && pageResolver.trim().length > 0) {
+      try {
+        linksToQueue = this.executePageResolverSandbox(
+          pageResolver,
+          discoveredRawLinks,
+          currentUrl,
+        );
+      } catch (resolverErr: unknown) {
+        const errMsg = resolverErr instanceof Error ? resolverErr.message : String(resolverErr);
+        await this.log(
+          siteId,
+          snapshotId,
+          LOG_LEVELS[1],
+          `Error en pageResolver: ${errMsg}`,
+          currentUrl,
+        );
+      }
+    }
+
+    return { discoveredRawLinks, linksToQueue };
+  }
+
+  /**
+   * Persiste el documento extraído en MongoDB.
+   */
+  private async persistDocument(data: PersistDocumentData): Promise<void> {
+    const {
+      userId,
+      siteId,
+      snapshotId,
+      extractedData,
+      $,
+      normalizedUrl,
+      statusCode,
+      executionTimeMs,
+      depth,
+      discoveredRawLinks,
+    } = data;
+
+    await this.documentModel.create({
+      userId,
+      siteId,
+      snapshotId,
+      name: extractedData.name || $('title').text().trim() || normalizedUrl,
+      url: normalizedUrl,
+      description: extractedData.description || '',
+      extra: extractedData.extra || {},
+      depth,
+      discoveredLinks: discoveredRawLinks,
+      crawl: {
+        statusCode,
+        executionTimeMs,
+        fetchedAt: new Date(),
+      },
+    });
+  }
+
   private executeExtractorSandbox(code: string, $: cheerio.CheerioAPI, url: string): ExtractedData {
-    const sandbox: { $; url: string; result: ExtractedData | null } = {
+    const sandbox: { $: cheerio.CheerioAPI; url: string; result: ExtractedData | null } = {
       $,
       url,
       result: null,
@@ -379,23 +444,29 @@ export class CrawlerProcessor extends WorkerHost {
     return Array.isArray(sandbox.result) ? sandbox.result : links;
   }
 
+  private normalizeUrl(rawUrl: string): string {
+    try {
+      const u = new URL(rawUrl);
+      u.hash = '';
+      if (u.pathname.endsWith('/') && u.pathname.length > 1) {
+        u.pathname = u.pathname.slice(0, -1);
+      }
+      return u.href;
+    } catch {
+      return rawUrl;
+    }
+  }
+
   private async log(
     siteId: Types.ObjectId,
     snapshotId: Types.ObjectId,
-    level: 'info' | 'warn' | 'error',
+    level: LogLevel,
     message: string,
     url?: string,
     metadata?: Record<string, unknown>,
   ) {
     try {
-      await this.logModel.create({
-        siteId,
-        snapshotId,
-        level,
-        message,
-        url,
-        metadata,
-      });
+      await this.logModel.create({ siteId, snapshotId, level, message, url, metadata });
     } catch (err) {
       this.logger.error(`No se pudo guardar el crawl log: ${err}`);
     }

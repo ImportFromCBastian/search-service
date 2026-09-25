@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 import { CurrentSite } from '../shared/decorators/current-site.decorator';
 import { CurrentUser } from '../shared/decorators/current-user.decorator';
 import { ApiKeyGuard } from '../shared/guards/api-key.guard';
+import { ParseObjectIdPipe } from '../shared/pipes/parse-object-id.pipe';
 import type { SiteDocument } from '../site/entities/site.entity';
 import { DocumentService } from './document.service';
 import { DocumentResponseDto } from './dto/document-response.dto';
@@ -44,9 +45,13 @@ export class DocumentController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener detalle completo de un documento indexado' })
-  @ApiParam({ name: 'id', description: 'ID del documento' })
+  @ApiParam({ name: 'id', description: 'ID del documento (ObjectId)' })
   @ApiResponse({ status: 200, description: 'Detalle del documento', type: DocumentResponseDto })
-  async findOne(@CurrentUser() userId: Types.ObjectId, @Param('id') id: string) {
+  @ApiResponse({ status: 400, description: 'ID con formato inválido' })
+  async findOne(
+    @CurrentUser() userId: Types.ObjectId,
+    @Param('id', ParseObjectIdPipe) id: Types.ObjectId,
+  ) {
     return this.documentService.findOne(userId, id);
   }
 }

@@ -2,6 +2,12 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CrawlerService } from '../crawler/crawler.service';
+import { CascadeDeleteService } from '../shared/cascade-delete.service';
+import {
+  ACTIVE_SNAPSHOT_STATUSES,
+  SNAPSHOT_STATUSES,
+  SNAPSHOT_TRIGGERS,
+} from '../shared/crawl.enum';
 import type { PaginationDto } from '../shared/dto/pagination.dto';
 import { Site, type SiteDocument } from '../site/entities/site.entity';
 import type { CreateSnapshotDto } from './dto/create-snapshot.dto';
@@ -13,15 +19,12 @@ export class SnapshotService {
     @InjectModel(Snapshot.name) private readonly snapshotModel: Model<SnapshotDocument>,
     @InjectModel(Site.name) private readonly siteModel: Model<SiteDocument>,
     private readonly crawlerService: CrawlerService,
+    private readonly cascadeDeleteService: CascadeDeleteService,
   ) {}
 
   async create(userId: Types.ObjectId, createSnapshotDto: CreateSnapshotDto) {
-    const { siteId } = createSnapshotDto;
-    if (!Types.ObjectId.isValid(siteId)) {
-      throw new NotFoundException(`ID de sitio ${siteId} no válido`);
-    }
-
-    const siteObjectId = new Types.ObjectId(siteId);
+    
+    const siteObjectId = new Types.ObjectId(createSnapshotDto.siteId);
     const site = await this.siteModel.findOne({ _id: siteObjectId, userId }).exec();
 
     if (!site) {
@@ -32,7 +35,7 @@ export class SnapshotService {
     const activeSnapshot = await this.snapshotModel
       .findOne({
         siteId: siteObjectId,
-        status: { $in: ['pending', 'running'] },
+        status: { $in: ACTIVE_SNAPSHOT_STATUSES },
       })
       .exec();
 
@@ -46,8 +49,8 @@ export class SnapshotService {
     const snapshot = new this.snapshotModel({
       siteId: siteObjectId,
       userId,
-      status: 'pending',
-      trigger: 'manual',
+      status: SNAPSHOT_STATUSES[0],
+      trigger: SNAPSHOT_TRIGGERS[0],
       configUsed: {
         url: site.url,
         depth: site.depth,
@@ -74,7 +77,7 @@ export class SnapshotService {
     // 3. Actualizar resumen en el sitio
     site.lastSnapshot = {
       snapshotId: snapshot._id,
-      status: 'pending',
+      status: ACTIVE_SNAPSHOT_STATUSES[0],
       at: new Date(),
     };
     await site.save();
@@ -85,20 +88,9 @@ export class SnapshotService {
     return snapshot.toObject();
   }
 
-  async findAllBySite(userId: Types.ObjectId, siteId: string, pagination: PaginationDto) {
-    if (!Types.ObjectId.isValid(siteId)) {
-      throw new NotFoundException(`ID de sitio ${siteId} no válido`);
-    }
-
-    const siteObjectId = new Types.ObjectId(siteId);
-    const siteExists = await this.siteModel.exists({ _id: siteObjectId, userId });
-
-    if (!siteExists) {
-      throw new NotFoundException(`Sitio con ID ${siteId} no encontrado`);
-    }
-
+  async findAllBySite(userId: Types.ObjectId, siteId: Types.ObjectId, pagination: PaginationDto) {
     const skip = (pagination.page - 1) * pagination.limit;
-    const filter = { siteId: siteObjectId, userId };
+    const filter = { siteId, userId };
 
     const [items, total] = await Promise.all([
       this.snapshotModel
@@ -120,15 +112,8 @@ export class SnapshotService {
     };
   }
 
-  async findOne(userId: Types.ObjectId, id: string) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new NotFoundException(`ID de snapshot ${id} no válido`);
-    }
-
-    const snapshot = await this.snapshotModel
-      .findOne({ _id: new Types.ObjectId(id), userId })
-      .lean()
-      .exec();
+  async findOne(userId: Types.ObjectId, id: Types.ObjectId) {
+    const snapshot = await this.snapshotModel.findOne({ _id: id, userId }).lean().exec();
 
     if (!snapshot) {
       throw new NotFoundException(`Snapshot con ID ${id} no encontrado`);
@@ -137,26 +122,21 @@ export class SnapshotService {
     return snapshot;
   }
 
-  async cancel(userId: Types.ObjectId, id: string) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new NotFoundException(`ID de snapshot ${id} no válido`);
-    }
-
-    const snapshotId = new Types.ObjectId(id);
-    const snapshot = await this.snapshotModel.findOne({ _id: snapshotId, userId }).exec();
+  async cancel(userId: Types.ObjectId, id: Types.ObjectId) {
+    const snapshot = await this.snapshotModel.findOne({ _id: id, userId }).exec();
 
     if (!snapshot) {
       throw new NotFoundException(`Snapshot con ID ${id} no encontrado`);
     }
 
-    if (snapshot.status !== 'pending' && snapshot.status !== 'running') {
+    if (snapshot.status !== 'pending' && snapshot.status !== SNAPSHOT_STATUSES[1]) {
       throw new BadRequestException(
         `No se puede cancelar un snapshot con estado '${snapshot.status}'`,
       );
     }
 
     const finishedAt = new Date();
-    snapshot.status = 'failed';
+    snapshot.status = SNAPSHOT_STATUSES[3];
     snapshot.error = 'Cancelado manualmente por el usuario';
     snapshot.finishedAt = finishedAt;
     if (snapshot.startedAt) {
@@ -171,7 +151,7 @@ export class SnapshotService {
         $set: {
           lastSnapshot: {
             snapshotId: snapshot._id,
-            status: 'failed',
+            status: SNAPSHOT_STATUSES[3],
             at: finishedAt,
           },
         },
@@ -179,5 +159,19 @@ export class SnapshotService {
     );
 
     return { success: true, message: `Snapshot ${id} cancelado correctamente` };
+  }
+
+  async remove(userId: Types.ObjectId, id: Types.ObjectId) {
+    const snapshot = await this.snapshotModel.findOne({ _id: id, userId }).exec();
+
+    if (!snapshot) {
+      throw new NotFoundException(`Snapshot con ID ${id} no encontrado`);
+    }
+
+    // Borrado en cascada: documentos y logs del snapshot antes de borrar el snapshot
+    await this.cascadeDeleteService.deleteBySnapshot(id);
+    await this.snapshotModel.deleteOne({ _id: id }).exec();
+
+    return { success: true, message: `Snapshot ${id} y sus datos eliminados` };
   }
 }

@@ -11,11 +11,12 @@ export class CrawlLogService {
   async findAll(query: QueryCrawlLogDto) {
     const filter: Record<string, unknown> = {};
 
-    if (query.snapshotId && Types.ObjectId.isValid(query.snapshotId)) {
+    // El formato de snapshotId y siteId ya fue validado por QueryCrawlLogDto (objectIdSchema)
+    if (query.snapshotId) {
       filter.snapshotId = new Types.ObjectId(query.snapshotId);
     }
 
-    if (query.siteId && Types.ObjectId.isValid(query.siteId)) {
+    if (query.siteId) {
       filter.siteId = new Types.ObjectId(query.siteId);
     }
 

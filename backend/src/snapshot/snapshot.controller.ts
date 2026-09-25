@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Types } from 'mongoose';
 import { CurrentUser } from '../shared/decorators/current-user.decorator';
-import { PaginationDto } from '../shared/dto/pagination.dto';
+import { DeleteResponseDto } from '../shared/dto/delete-response.dto';
+import { ParseObjectIdPipe } from '../shared/pipes/parse-object-id.pipe';
 import { CreateSnapshotDto } from './dto/create-snapshot.dto';
 import { SnapshotResponseDto } from './dto/snapshot-response.dto';
 import { SnapshotService } from './snapshot.service';
@@ -28,30 +29,44 @@ export class SnapshotController {
     return this.snapshotService.create(userId, createSnapshotDto);
   }
 
-  @Get('site/:siteId')
-  @ApiOperation({ summary: 'Listar el historial cronológico de snapshots de un sitio' })
-  @ApiParam({ name: 'siteId', description: 'ID del sitio a consultar' })
-  @ApiResponse({ status: 200, description: 'Historial de snapshots', type: [SnapshotResponseDto] })
-  async findAllBySite(
-    @CurrentUser() userId: Types.ObjectId,
-    @Param('siteId') siteId: string,
-    @Query() pagination: PaginationDto,
-  ) {
-    return this.snapshotService.findAllBySite(userId, siteId, pagination);
-  }
-
   @Get(':id')
   @ApiOperation({ summary: 'Obtener el detalle y métricas de un snapshot por ID' })
-  @ApiParam({ name: 'id', description: 'ID del snapshot' })
+  @ApiParam({ name: 'id', description: 'ID del snapshot (ObjectId)' })
   @ApiResponse({ status: 200, description: 'Detalle del snapshot', type: SnapshotResponseDto })
-  async findOne(@CurrentUser() userId: Types.ObjectId, @Param('id') id: string) {
+  @ApiResponse({ status: 400, description: 'ID con formato inválido' })
+  async findOne(
+    @CurrentUser() userId: Types.ObjectId,
+    @Param('id', ParseObjectIdPipe) id: Types.ObjectId,
+  ) {
     return this.snapshotService.findOne(userId, id);
   }
 
   @Post(':id/cancel')
   @ApiOperation({ summary: 'Cancelar un snapshot que se encuentre en ejecución o pendiente' })
-  @ApiParam({ name: 'id', description: 'ID del snapshot a cancelar' })
-  async cancel(@CurrentUser() userId: Types.ObjectId, @Param('id') id: string) {
+  @ApiParam({ name: 'id', description: 'ID del snapshot a cancelar (ObjectId)' })
+  @ApiResponse({ status: 400, description: 'ID con formato inválido' })
+  async cancel(
+    @CurrentUser() userId: Types.ObjectId,
+    @Param('id', ParseObjectIdPipe) id: Types.ObjectId,
+  ) {
     return this.snapshotService.cancel(userId, id);
+  }
+
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Eliminar definitivamente un snapshot y todos sus documentos y logs asociados',
+  })
+  @ApiParam({ name: 'id', description: 'ID del snapshot a eliminar (ObjectId)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Snapshot y sus datos eliminados exitosamente',
+    type: DeleteResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'ID con formato inválido' })
+  async remove(
+    @CurrentUser() userId: Types.ObjectId,
+    @Param('id', ParseObjectIdPipe) id: Types.ObjectId,
+  ) {
+    return this.snapshotService.remove(userId, id);
   }
 }

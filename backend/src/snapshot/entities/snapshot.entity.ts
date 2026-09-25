@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { type HydratedDocument, Types } from 'mongoose';
 import {
+  ACTIVE_SNAPSHOT_STATUSES,
   SITE_FREQUENCIES,
   type SiteFrequency,
   SNAPSHOT_STATUSES,
@@ -70,3 +71,15 @@ export class Snapshot {
 
 export type SnapshotDocument = HydratedDocument<Snapshot>;
 export const SnapshotSchema = SchemaFactory.createForClass(Snapshot);
+
+/**
+ * Garantía física de snapshot único activo por sitio.
+ * Solo puede existir un documento con status 'pending' o 'running' para el mismo siteId.
+ */
+SnapshotSchema.index(
+  { siteId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: { $in: ACTIVE_SNAPSHOT_STATUSES } },
+  },
+);

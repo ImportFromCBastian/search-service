@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CrawlerModule } from '../crawler/crawler.module';
+import { SharedModule } from '../shared/shared.module';
 import { Site, SiteSchema } from '../site/entities/site.entity';
 import { Snapshot, SnapshotSchema } from './entities/snapshot.entity';
 import { SnapshotController } from './snapshot.controller';
@@ -13,6 +14,7 @@ import { SnapshotService } from './snapshot.service';
       { name: Site.name, schema: SiteSchema },
     ]),
     CrawlerModule,
+    SharedModule,
   ],
   controllers: [SnapshotController],
   providers: [SnapshotService],

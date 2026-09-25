@@ -2,12 +2,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import type { Types } from 'mongoose';
-
-export interface CrawlJobData {
-  siteId: string;
-  snapshotId: string;
-  userId: string;
-}
+import { CrawlJobData } from './types/crawles';
 
 export const CRAWLER_QUEUE_NAME = 'crawler-queue';
 
@@ -34,7 +29,7 @@ export class CrawlerService {
         userId: userId.toString(),
       },
       {
-        jobId: snapshotId.toString(), // Evita jobs duplicados para el mismo snapshot en la cola
+        jobId: snapshotId.toString(),
         removeOnComplete: true,
         removeOnFail: false,
       },

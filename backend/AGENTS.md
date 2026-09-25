@@ -53,7 +53,7 @@ Cada módulo funcional reside en `src/{módulo}/` y debe contener:
      ```ts
      SnapshotSchema.index(
        { siteId: 1 },
-       { unique: true, partialFilterExpression: { status: { $in: ['pending', 'running'] } } },
+       { unique: true, partialFilterExpression: { status: { $in: ACTIVE_SNAPSHOT_STATUSES } } },
      );
      ```
 
