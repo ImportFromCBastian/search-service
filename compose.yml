@@ -1,0 +1,77 @@
+name: search-service
+
+services:
+  # Database: MongoDB
+  mongo:
+    image: mongo:${MONGO_IMAGE_TAG:-7.0}
+    container_name: search-service-mongo
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  # Cache / Queue Broker: Redis
+  redis:
+    image: redis:7-alpine
+    container_name: search-service-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  # Backend: NestJS API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: search-service-backend
+    ports:
+      - "${BACKEND_PORT:-4000}:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongo:27017/${MONGO_DATABASE:-search-service}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Frontend: Next.js Web App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: search-service-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - NEXT_PUBLIC_API_URL=http://localhost:${BACKEND_PORT:-4000}
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+  redis_data:
+

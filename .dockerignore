@@ -1,0 +1,14 @@
+/.pnpm-store
+/.turbo
+/.next
+/dist
+/build
+/coverage
+/.git
+/.gitignore
+/.vscode
+/*.log
+/.env
+/.env.*
+!**/.env.example
+
