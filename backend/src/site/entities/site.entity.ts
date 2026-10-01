@@ -5,7 +5,7 @@ import {
   type SiteFrequency,
   SNAPSHOT_STATUSES,
   type SnapshotStatus,
-} from '../../shared/crawl.enum';
+} from '@search-service/shared/enums/crawl.enum';
 
 @Schema({ _id: false })
 export class LastSnapshotSummary {

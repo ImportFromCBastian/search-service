@@ -15,7 +15,7 @@ import {
   ACTIVE_SNAPSHOT_STATUSES,
   SNAPSHOT_STATUSES,
   SNAPSHOT_TRIGGERS,
-} from '../shared/crawl.enum';
+} from '@search-service/shared/enums/crawl.enum';
 import type { PaginationDto } from '../shared/dto/pagination.dto';
 import { SiteService } from '../site/site.service';
 import type { CreateSnapshotDto } from './dto/create-snapshot.dto';

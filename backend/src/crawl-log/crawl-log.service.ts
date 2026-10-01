@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import type { LogLevel } from '../shared/crawl.enum';
+import type { LogLevel } from '@search-service/shared/enums/crawl.enum';
 import type { QueryCrawlLogDto } from './dto/query-crawl-log.dto';
 import { CrawlLog, type CrawlLogDocument } from './entities/crawl-log.entity';
 

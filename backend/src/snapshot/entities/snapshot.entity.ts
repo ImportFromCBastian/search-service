@@ -8,7 +8,7 @@ import {
   SNAPSHOT_TRIGGERS,
   type SnapshotStatus,
   type SnapshotTrigger,
-} from '../../shared/crawl.enum';
+} from '@search-service/shared/enums/crawl.enum';
 
 /**
  * Copia estática de la configuración con la que se ejecutó el crawling.

@@ -1,5 +1,0 @@
-allowBuilds:
-  '@parcel/watcher': true
-  '@scarf/scarf': true
-  msgpackr-extract: true
-  unrs-resolver: true

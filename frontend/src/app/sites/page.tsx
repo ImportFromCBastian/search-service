@@ -1,3 +1,7 @@
 export default function SitesPage() {
-  return <h1> Display Sites</h1>
+  return (
+    <section>
+      <h2>My sites</h2>
+    </section>
+  )
 }

@@ -1,6 +1,5 @@
 import { createZodDto } from 'nestjs-zod';
-import { CreateSiteSchema } from './create-site.dto';
-
-export const UpdateSiteSchema = CreateSiteSchema.partial();
+import { UpdateSiteSchema } from '@search-service/shared/schemas/site.schema';
 
 export class UpdateSiteDto extends createZodDto(UpdateSiteSchema) {}
+

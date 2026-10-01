@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@search-service/shared/*": ["../packages/shared/src/*"]
     }
   },
   "include": [

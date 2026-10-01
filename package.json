@@ -1,0 +1,12 @@
+{
+  "name": "search-service",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.26.2",
+  "scripts": {
+    "build": "pnpm --filter @search-service/shared build && pnpm --filter backend build && pnpm --filter frontend build",
+    "build:shared": "pnpm --filter @search-service/shared build",
+    "dev:backend": "pnpm --filter backend start:dev",
+    "dev:frontend": "pnpm --filter frontend dev"
+  }
+}

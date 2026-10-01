@@ -17,7 +17,7 @@ services:
       start_period: 5s
     restart: unless-stopped
 
-  # Cache / Queue Broker: Redis
+  # Redis
   redis:
     image: redis:7-alpine
     container_name: search-service-redis
@@ -36,8 +36,8 @@ services:
   # Backend: NestJS API
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: search-service-backend
     ports:
       - "${BACKEND_PORT:-4000}:3000"
@@ -57,8 +57,8 @@ services:
   # Frontend: Next.js Web App
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
     container_name: search-service-frontend
     ports:
       - "${FRONTEND_PORT:-3000}:3000"

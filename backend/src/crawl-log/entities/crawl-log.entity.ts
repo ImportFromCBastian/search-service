@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { type HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
-import { LOG_LEVELS, type LogLevel } from '../../shared/crawl.enum';
+import { LOG_LEVELS, type LogLevel } from '@search-service/shared/enums/crawl.enum';
 
 @Schema({ collection: 'crawl_logs', timestamps: { createdAt: true, updatedAt: false } })
 export class CrawlLog {
