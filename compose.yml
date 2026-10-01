@@ -40,7 +40,7 @@ services:
       dockerfile: backend/Dockerfile
     container_name: search-service-backend
     ports:
-      - "${BACKEND_PORT:-4000}:3000"
+      - "${BACKEND_PORT:-4000}:4000"
     environment:
       - NODE_ENV=production
       - PORT=3000
