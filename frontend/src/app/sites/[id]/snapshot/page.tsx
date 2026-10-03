@@ -47,8 +47,6 @@ export default async function SnapshotsPage({
     }),
   ])
 
-  console.log(snapshotsRes.data)
-
   if (!siteRes.success || !siteRes.data) {
     if (siteRes.status === 404) {
       notFound()
