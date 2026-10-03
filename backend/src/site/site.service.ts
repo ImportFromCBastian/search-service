@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import type { PaginationDto } from '../shared/dto/pagination.dto';
 import { generateApiKey } from '../shared/utils/api-key.util';
+import type { QuerySnapshotDto } from '../snapshot/dto/query-snapshot.dto';
 import { SnapshotService } from '../snapshot/snapshot.service';
 import type { CreateSiteDto } from './dto/create-site.dto';
 import type { UpdateSiteDto } from './dto/update-site.dto';
@@ -56,11 +57,11 @@ export class SiteService {
     };
   }
 
-  async findAllBySite(userId: Types.ObjectId, siteId: Types.ObjectId, pagination: PaginationDto) {
+  async findAllBySite(userId: Types.ObjectId, siteId: Types.ObjectId, query: QuerySnapshotDto) {
     // Validar existencia y propiedad del sitio
     await this.findOne(userId, siteId);
 
-    return await this.snapshotService.findAllBySite(userId, siteId, pagination);
+    return await this.snapshotService.findAllBySite(userId, siteId, query);
   }
 
   async findById(id: Types.ObjectId): Promise<SiteDocument> {
@@ -84,6 +85,19 @@ export class SiteService {
     },
   ): Promise<void> {
     await this.siteModel.updateOne({ _id: siteId }, { $set: { lastSnapshot } }).exec();
+  }
+
+  /**
+   * Actualiza el campo denormalizado `publishedSnapshotId` del sitio.
+   * Pasar `null` para limpiar la publicación.
+   */
+  async updatePublishedSnapshot(
+    siteId: Types.ObjectId,
+    snapshotId: Types.ObjectId | null,
+  ): Promise<void> {
+    await this.siteModel
+      .updateOne({ _id: siteId }, { $set: { publishedSnapshotId: snapshotId } })
+      .exec();
   }
 
   async findAll(userId: Types.ObjectId, pagination: PaginationDto) {

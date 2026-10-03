@@ -5,6 +5,7 @@ import { CurrentUser } from '../shared/decorators/current-user.decorator';
 import { DeleteResponseDto } from '../shared/dto/delete-response.dto';
 import { PaginationDto } from '../shared/dto/pagination.dto';
 import { ParseObjectIdPipe } from '../shared/pipes/parse-object-id.pipe';
+import { QuerySnapshotDto } from '../snapshot/dto/query-snapshot.dto';
 import { SnapshotResponseDto } from '../snapshot/dto/snapshot-response.dto';
 import { CreateSiteDto } from './dto/create-site.dto';
 import { SiteCreatedResponseDto, SiteResponseDto } from './dto/site-response.dto';
@@ -52,9 +53,9 @@ export class SiteController {
   async findAllBySite(
     @CurrentUser() userId: Types.ObjectId,
     @Param('id', ParseObjectIdPipe) id: Types.ObjectId,
-    @Query() pagination: PaginationDto,
+    @Query() query: QuerySnapshotDto,
   ) {
-    return this.siteService.findAllBySite(userId, id, pagination);
+    return this.siteService.findAllBySite(userId, id, query);
   }
 
   @Get(':id')

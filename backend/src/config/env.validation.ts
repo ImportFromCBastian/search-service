@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 export const envSchema = z.object({
-  PORT: z.coerce.number().default(3000),
+  PORT: z.coerce.number().default(4000),
+  BACKEND_PORT: z.coerce.number().optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   MONGODB_URI: z.string().min(1).default('mongodb://127.0.0.1:27017/search-service'),
   REDIS_HOST: z.string().default('127.0.0.1'),

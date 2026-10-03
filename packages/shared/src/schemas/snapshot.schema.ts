@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { SITE_FREQUENCIES, SNAPSHOT_STATUSES, SNAPSHOT_TRIGGERS } from '../enums/crawl.enum';
-import { objectIdSchema } from './common.schema';
+import { BATCH_ACTIONS, SITE_FREQUENCIES, SNAPSHOT_STATUSES, SNAPSHOT_TRIGGERS } from '../enums/crawl.enum';
+import { objectIdSchema, PaginationSchema } from './common.schema';
 
 export const CreateSnapshotSchema = z.object({
   siteId: objectIdSchema.describe('ID del sitio a rastrear'),
@@ -30,8 +30,36 @@ export const SnapshotResponseSchema = z.object({
   finishedAt: z.string().optional().describe('Fecha/hora de finalización'),
   durationMs: z.number().optional().describe('Duración total en milisegundos'),
   error: z.string().optional().describe('Mensaje de error si la ejecución falló'),
+  isPublished: z.boolean().describe('Indica si este snapshot está publicado como fuente de búsqueda'),
+  isArchived: z.boolean().describe('Indica si el snapshot fue archivado por el usuario'),
   createdAt: z.string().describe('Fecha de registro'),
   updatedAt: z.string().describe('Fecha de última actualización'),
 });
 export type SnapshotResponse = z.infer<typeof SnapshotResponseSchema>;
+
+export const QuerySnapshotSchema = PaginationSchema.extend({
+  status: z.enum(SNAPSHOT_STATUSES).optional().describe('Filtrar por estado del snapshot'),
+  from: z.string().optional().describe('Fecha mínima de creación (ISO 8601)'),
+  to: z.string().optional().describe('Fecha máxima de creación (ISO 8601)'),
+  includeArchived: z
+    .preprocess((val) => {
+      if (typeof val === 'string') {
+        if (val.toLowerCase() === 'true' || val === '1') return true;
+        if (val.toLowerCase() === 'false' || val === '0') return false;
+      }
+      return val;
+    }, z.boolean())
+    .optional()
+    .default(false)
+    .describe('Incluir snapshots archivados'),
+});
+
+export type QuerySnapshotInput = z.infer<typeof QuerySnapshotSchema>;
+
+export const BatchActionSchema = z.object({
+  ids: z.array(objectIdSchema).min(1, 'Debe incluir al menos un ID').describe('IDs de snapshots a procesar'),
+  action: z.enum(BATCH_ACTIONS).describe('Acción a ejecutar en lote: archive, unarchive o delete'),
+});
+export type BatchActionInput = z.infer<typeof BatchActionSchema>;
+
 

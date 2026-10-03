@@ -1,12 +1,16 @@
 import * as vm from 'node:vm';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
+import {
+  LOG_LEVELS,
+  type LogLevel,
+  SNAPSHOT_STATUSES,
+} from '@search-service/shared/enums/crawl.enum';
 import type { Job } from 'bullmq';
 import * as cheerio from 'cheerio';
 import { Types } from 'mongoose';
 import { CrawlLogService } from '../crawl-log/crawl-log.service';
 import { DocumentService } from '../document/document.service';
-import { LOG_LEVELS, type LogLevel, SNAPSHOT_STATUSES } from '@search-service/shared/enums/crawl.enum';
 import { SiteService } from '../site/site.service';
 import { SnapshotService } from '../snapshot/snapshot.service';
 import { CRAWLER_QUEUE_NAME } from './crawler.service';

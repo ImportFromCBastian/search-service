@@ -21,6 +21,9 @@ describe('SnapshotService', () => {
             findOne: jest.fn(),
             create: jest.fn(),
             countDocuments: jest.fn(),
+            updateMany: jest.fn(),
+            deleteMany: jest.fn(),
+            deleteOne: jest.fn(),
           },
         },
         {
@@ -28,6 +31,7 @@ describe('SnapshotService', () => {
           useValue: {
             findOne: jest.fn(),
             updateLastSnapshot: jest.fn(),
+            updatePublishedSnapshot: jest.fn(),
           },
         },
         {

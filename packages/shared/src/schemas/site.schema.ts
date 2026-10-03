@@ -57,6 +57,9 @@ export const SiteResponseSchema = z.object({
   lastSnapshot: LastSnapshotSummaryResponseSchema.optional().describe(
     'Resumen del último snapshot',
   ),
+  publishedSnapshotId: z.string().optional().describe(
+    'ID del snapshot publicado como fuente de búsqueda pública',
+  ),
   createdAt: z.string().describe('Fecha de creación'),
   updatedAt: z.string().describe('Fecha de última modificación'),
 });

@@ -1,11 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { type HydratedDocument, Types } from 'mongoose';
 import {
   SITE_FREQUENCIES,
   type SiteFrequency,
   SNAPSHOT_STATUSES,
   type SnapshotStatus,
 } from '@search-service/shared/enums/crawl.enum';
+import { type HydratedDocument, Types } from 'mongoose';
 
 @Schema({ _id: false })
 export class LastSnapshotSummary {
@@ -52,6 +52,10 @@ export class Site {
   /** Undefined mientras el sitio no tenga ningún snapshot. */
   @Prop({ type: LastSnapshotSummarySchema })
   lastSnapshot?: LastSnapshotSummary;
+
+  /** ID del snapshot publicado como fuente de búsqueda pública. null si ninguno está publicado. */
+  @Prop({ type: Types.ObjectId, ref: 'Snapshot', default: null })
+  publishedSnapshotId?: Types.ObjectId | null;
 
   createdAt!: Date;
   updatedAt!: Date;

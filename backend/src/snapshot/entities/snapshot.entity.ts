@@ -1,5 +1,4 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { type HydratedDocument, Types } from 'mongoose';
 import {
   ACTIVE_SNAPSHOT_STATUSES,
   SITE_FREQUENCIES,
@@ -9,6 +8,7 @@ import {
   type SnapshotStatus,
   type SnapshotTrigger,
 } from '@search-service/shared/enums/crawl.enum';
+import { type HydratedDocument, Types } from 'mongoose';
 
 /**
  * Copia estática de la configuración con la que se ejecutó el crawling.
@@ -64,6 +64,12 @@ export class Snapshot {
 
   @Prop({ type: String })
   error?: string;
+
+  @Prop({ type: Boolean, default: false })
+  isPublished!: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  isArchived!: boolean;
 
   createdAt!: Date;
   updatedAt!: Date;

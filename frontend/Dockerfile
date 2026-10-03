@@ -14,7 +14,7 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/shared/package.json ./packages/shared/
 COPY frontend/package.json ./frontend/
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-pnpm install --frozen-lockfile --filter @search-service/shared --filter frontend --ignore-scripts
+    pnpm install --frozen-lockfile --filter @search-service/shared --filter frontend --ignore-scripts
 
 # Stage 3: Build Next.js application
 FROM deps AS builder
@@ -23,6 +23,8 @@ RUN pnpm --filter @search-service/shared build
 COPY frontend ./frontend
 RUN mkdir -p frontend/public
 ENV NEXT_TELEMETRY_DISABLED=1
+ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:4000
+ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
 RUN pnpm --filter frontend build
 
 # Stage 4: Production runner

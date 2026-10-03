@@ -1,50 +1,46 @@
 import { Search } from 'lucide-react'
 import Link from 'next/link'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { Blobatar } from '@/components/ui/blobatar'
-import { Separator } from '@/components/ui/separator'
-import { navBarStrings } from '@/constraits/strings'
+import { NavLinks } from './nav-links'
 
-// Layout principal del componente NavBar
 export default function NavBar() {
   return (
-    <nav className="flex items-center justify-between text-sm text-foreground/80 backdrop-blur border-b border-black mx-4 py-2">
-      <LogoSection />
-      <NavBarLinkSection />
-      <UserProfileSection />
-    </nav>
+    <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-md">
+      <div className="container mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
+        <LogoSection />
+        <NavLinks />
+        <UserProfileSection />
+      </div>
+    </header>
   )
 }
 
 function LogoSection() {
   return (
-    <h1>
-      <Link className=" items-center gap-2 text-2xl font-bold flex" href="/">
-        Search Service
-        <Search />
+    <div className="flex items-center">
+      <Link
+        href="/"
+        className="flex items-center gap-2 text-lg font-bold text-foreground transition-opacity hover:opacity-85"
+      >
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+          <Search className="h-4 w-4" />
+        </span>
+        <span>Search Service</span>
       </Link>
-    </h1>
-  )
-}
-
-function NavBarLinkSection() {
-  return (
-    <>
-      {navBarStrings.map((elements, index) => (
-        <div key={elements.href} className="flex items-center gap-2 w-fit">
-          <Link href={elements.href}> {elements.title}</Link>
-          {index !== navBarStrings.length - 1 ? (
-            <Separator orientation="vertical" className="size-20 bg-black" />
-          ) : null}
-        </div>
-      ))}
-    </>
+    </div>
   )
 }
 
 function UserProfileSection() {
   return (
-    <span className="flex items-center gap-2">
-      sebshndz (Admin) <Blobatar name="sebshndz2001" />
-    </span>
+    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+      <ThemeToggle />
+      <span className="hidden sm:inline font-medium text-foreground">
+        sebshndz{' '}
+        <span className="text-muted-foreground font-normal">(Admin)</span>
+      </span>
+      <Blobatar name="sebshndz2001" />
+    </div>
   )
 }

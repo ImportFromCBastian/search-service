@@ -34,6 +34,6 @@ ENV NODE_ENV=production
 COPY --from=builder --chown=node:node /app/deploy ./
 
 USER node
-EXPOSE 3000
+EXPOSE 4000
 
 CMD ["node", "dist/main.js"]

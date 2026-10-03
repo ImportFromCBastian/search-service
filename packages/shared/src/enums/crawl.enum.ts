@@ -13,3 +13,6 @@ export type SnapshotTrigger = (typeof SNAPSHOT_TRIGGERS)[number];
 export const LOG_LEVELS = ['info', 'warn', 'error'] as const;
 export type LogLevel = (typeof LOG_LEVELS)[number];
 
+export const BATCH_ACTIONS = ['archive', 'unarchive', 'delete'] as const;
+export type BatchAction = (typeof BATCH_ACTIONS)[number];
+

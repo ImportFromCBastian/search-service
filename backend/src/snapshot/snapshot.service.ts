@@ -5,20 +5,22 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-
 import { InjectModel } from '@nestjs/mongoose';
+import {
+  ACTIVE_SNAPSHOT_STATUSES,
+  type BatchAction,
+  SNAPSHOT_STATUSES,
+  SNAPSHOT_TRIGGERS,
+} from '@search-service/shared/enums/crawl.enum';
+import type { QueryFilter } from 'mongoose';
 import { Model, Types } from 'mongoose';
 import { CrawlLogService } from '../crawl-log/crawl-log.service';
 import { CrawlerService } from '../crawler/crawler.service';
 import { DocumentService } from '../document/document.service';
-import {
-  ACTIVE_SNAPSHOT_STATUSES,
-  SNAPSHOT_STATUSES,
-  SNAPSHOT_TRIGGERS,
-} from '@search-service/shared/enums/crawl.enum';
-import type { PaginationDto } from '../shared/dto/pagination.dto';
 import { SiteService } from '../site/site.service';
+import type { BatchActionDto } from './dto/batch-action.dto';
 import type { CreateSnapshotDto } from './dto/create-snapshot.dto';
+import type { QuerySnapshotDto } from './dto/query-snapshot.dto';
 import { Snapshot, type SnapshotDocument } from './entities/snapshot.entity';
 
 @Injectable()
@@ -127,27 +129,47 @@ export class SnapshotService {
     return snapshot.toObject();
   }
 
-  async findAllBySite(userId: Types.ObjectId, siteId: Types.ObjectId, pagination: PaginationDto) {
-    const skip = (pagination.page - 1) * pagination.limit;
-    const filter = { siteId, userId };
+  async findAllBySite(userId: Types.ObjectId, siteId: Types.ObjectId, query: QuerySnapshotDto) {
+    const skip = (query.page - 1) * query.limit;
+    const filter: QueryFilter<SnapshotDocument> = {
+      siteId,
+      userId,
+    };
 
+    // 2. Filtro de archivados
+    if (!query.includeArchived) {
+      filter.isArchived = { $ne: true };
+    }
+    // 3. Filtro por estado
+    if (query.status) {
+      filter.status = query.status;
+    }
+    // 4. Rango de fechas de creación
+    if (query.from || query.to) {
+      filter.createdAt = {};
+      if (query.from) {
+        filter.createdAt.$gte = new Date(query.from);
+      }
+      if (query.to) {
+        filter.createdAt.$lte = new Date(query.to);
+      }
+    }
     const [items, total] = await Promise.all([
       this.snapshotModel
         .find(filter)
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(pagination.limit)
+        .limit(query.limit)
         .lean()
         .exec(),
       this.snapshotModel.countDocuments(filter).exec(),
     ]);
-
     return {
       items,
       total,
-      page: pagination.page,
-      limit: pagination.limit,
-      totalPages: Math.ceil(total / pagination.limit),
+      page: query.page,
+      limit: query.limit,
+      totalPages: Math.ceil(total / query.limit),
     };
   }
 
@@ -255,6 +277,11 @@ export class SnapshotService {
       throw new NotFoundException(`Snapshot con ID ${id} no encontrado`);
     }
 
+    // Si el snapshot estaba publicado, limpiar la referencia del sitio
+    if (snapshot.isPublished) {
+      await this.siteService.updatePublishedSnapshot(snapshot.siteId, null);
+    }
+
     // Borrado jerárquico: documentos y logs del snapshot antes de borrar el snapshot
     await Promise.all([
       this.documentService.deleteManyBySnapshot(id),
@@ -263,5 +290,160 @@ export class SnapshotService {
     await this.snapshotModel.deleteOne({ _id: id }).exec();
 
     return { success: true, message: `Snapshot ${id} y sus datos eliminados` };
+  }
+
+  // ─── Publish / Unpublish ─────────────────────────────────────────────
+
+  /**
+   * Publica un snapshot como la fuente de búsqueda pública del sitio.
+   * Solo se puede publicar un snapshot con estado 'completed'.
+   * Al publicar, se despublica automáticamente cualquier snapshot anterior del mismo sitio.
+   */
+  async publish(userId: Types.ObjectId, id: Types.ObjectId) {
+    const snapshot = await this.snapshotModel.findOne({ _id: id, userId }).exec();
+
+    if (!snapshot) {
+      throw new NotFoundException(`Snapshot con ID ${id} no encontrado`);
+    }
+
+    if (snapshot.status !== SNAPSHOT_STATUSES[2]) {
+      throw new BadRequestException(
+        `Solo se puede publicar un snapshot con estado 'completed'. Estado actual: '${snapshot.status}'`,
+      );
+    }
+
+    if (snapshot.isPublished) {
+      throw new BadRequestException('Este snapshot ya está publicado');
+    }
+
+    // Despublicar cualquier snapshot anterior del mismo sitio
+    await this.snapshotModel.updateMany(
+      { siteId: snapshot.siteId, isPublished: true },
+      { $set: { isPublished: false } },
+    );
+
+    // Publicar el snapshot solicitado
+    snapshot.isPublished = true;
+    await snapshot.save();
+
+    // Denormalizar en el sitio
+    await this.siteService.updatePublishedSnapshot(snapshot.siteId, snapshot._id);
+
+    return snapshot.toObject();
+  }
+
+  /**
+   * Despublica un snapshot, removiendo la fuente de búsqueda pública del sitio.
+   */
+  async unpublish(userId: Types.ObjectId, id: Types.ObjectId) {
+    const snapshot = await this.snapshotModel.findOne({ _id: id, userId }).exec();
+
+    if (!snapshot) {
+      throw new NotFoundException(`Snapshot con ID ${id} no encontrado`);
+    }
+
+    if (!snapshot.isPublished) {
+      throw new BadRequestException('Este snapshot no está publicado');
+    }
+
+    snapshot.isPublished = false;
+    await snapshot.save();
+
+    // Limpiar la referencia del sitio
+    await this.siteService.updatePublishedSnapshot(snapshot.siteId, null);
+
+    return snapshot.toObject();
+  }
+
+  // ─── Batch Actions ──────────────────────────────────────────────────
+
+  /**
+   * Ejecuta una acción en lote sobre múltiples snapshots del mismo usuario.
+   * Acciones soportadas: archive, unarchive, delete.
+   */
+  async batchAction(userId: Types.ObjectId, dto: BatchActionDto) {
+    const ids = dto.ids.map((id) => new Types.ObjectId(id));
+    const action = dto.action as BatchAction;
+
+    // Verificar que todos los IDs pertenecen al usuario
+    const snapshots = await this.snapshotModel.find({ _id: { $in: ids }, userId }).exec();
+
+    if (snapshots.length !== ids.length) {
+      const foundIds = new Set(snapshots.map((s) => s._id.toString()));
+      const missing = ids.filter((id) => !foundIds.has(id.toString()));
+      throw new NotFoundException(`Snapshots no encontrados o sin permisos: ${missing.join(', ')}`);
+    }
+
+    switch (action) {
+      case 'archive': {
+        await this.snapshotModel.updateMany(
+          { _id: { $in: ids }, userId },
+          { $set: { isArchived: true } },
+        );
+
+        // Si alguno estaba publicado, despublicarlo
+        const publishedSnapshots = snapshots.filter((s) => s.isPublished);
+        if (publishedSnapshots.length > 0) {
+          await this.snapshotModel.updateMany(
+            { _id: { $in: publishedSnapshots.map((s) => s._id) } },
+            { $set: { isPublished: false } },
+          );
+          // Limpiar publishedSnapshotId de los sitios afectados
+          const affectedSiteIds = [...new Set(publishedSnapshots.map((s) => s.siteId.toString()))];
+          await Promise.all(
+            affectedSiteIds.map((siteId) =>
+              this.siteService.updatePublishedSnapshot(new Types.ObjectId(siteId), null),
+            ),
+          );
+        }
+
+        return {
+          success: true,
+          message: `${snapshots.length} snapshot(s) archivado(s)`,
+          affected: snapshots.length,
+        };
+      }
+
+      case 'unarchive': {
+        await this.snapshotModel.updateMany(
+          { _id: { $in: ids }, userId },
+          { $set: { isArchived: false } },
+        );
+        return {
+          success: true,
+          message: `${snapshots.length} snapshot(s) desarchivado(s)`,
+          affected: snapshots.length,
+        };
+      }
+
+      case 'delete': {
+        // Limpiar publishedSnapshotId de sitios con snapshots publicados que se borran
+        const publishedSnapshots = snapshots.filter((s) => s.isPublished);
+        if (publishedSnapshots.length > 0) {
+          const affectedSiteIds = [...new Set(publishedSnapshots.map((s) => s.siteId.toString()))];
+          await Promise.all(
+            affectedSiteIds.map((siteId) =>
+              this.siteService.updatePublishedSnapshot(new Types.ObjectId(siteId), null),
+            ),
+          );
+        }
+
+        // Borrado jerárquico de documentos y logs
+        await Promise.all(
+          ids.flatMap((id) => [
+            this.documentService.deleteManyBySnapshot(id),
+            this.crawlLogService.deleteManyBySnapshot(id),
+          ]),
+        );
+
+        await this.snapshotModel.deleteMany({ _id: { $in: ids }, userId }).exec();
+
+        return {
+          success: true,
+          message: `${snapshots.length} snapshot(s) eliminado(s) con sus datos`,
+          affected: snapshots.length,
+        };
+      }
+    }
   }
 }

@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -13,9 +14,15 @@ import { SnapshotModule } from './snapshot/snapshot.module';
 
 @Module({
   imports: [
-    // 1. Configuración global validada con Zod
+    // 1. Configuración global validada con Zod cargando el .env centralizado de la raíz
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: [
+        resolve(process.cwd(), '../.env'),
+        resolve(process.cwd(), '.env'),
+        resolve(__dirname, '../../.env'),
+        resolve(__dirname, '../../../.env'),
+      ],
       validate: validateEnv,
     }),
 

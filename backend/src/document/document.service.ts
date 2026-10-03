@@ -103,6 +103,8 @@ export class DocumentService {
     // El formato de snapshotId ya fue validado por QueryDocumentDto (objectIdSchema)
     if (query.snapshotId) {
       filter.snapshotId = new Types.ObjectId(query.snapshotId);
+    } else if (site.publishedSnapshotId) {
+      filter.snapshotId = site.publishedSnapshotId;
     } else if (site.lastSnapshot?.snapshotId) {
       filter.snapshotId = site.lastSnapshot.snapshotId;
     }

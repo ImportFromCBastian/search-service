@@ -17,3 +17,18 @@ export const navBarStrings: NavBarString[] = [
     href: '/configuration',
   },
 ]
+
+export const frequencyOptions = [
+  {
+    value: 'daily',
+    label: 'Diario',
+  },
+  {
+    value: 'weekly',
+    label: 'Semanal',
+  },
+  {
+    value: 'monthly',
+    label: 'Mensual',
+  },
+]

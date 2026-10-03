@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 import { CurrentUser } from '../shared/decorators/current-user.decorator';
 import { DeleteResponseDto } from '../shared/dto/delete-response.dto';
 import { ParseObjectIdPipe } from '../shared/pipes/parse-object-id.pipe';
+import { BatchActionDto } from './dto/batch-action.dto';
 import { CreateSnapshotDto } from './dto/create-snapshot.dto';
 import { SnapshotResponseDto } from './dto/snapshot-response.dto';
 import { SnapshotService } from './snapshot.service';
@@ -83,5 +84,67 @@ export class SnapshotController {
     @Param('id', ParseObjectIdPipe) id: Types.ObjectId,
   ) {
     return this.snapshotService.remove(userId, id);
+  }
+
+  @Post(':id/publish')
+  @ApiOperation({
+    summary: 'Publicar un snapshot como fuente de búsqueda pública del sitio',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID del snapshot a publicar',
+    example: '66f000000000000000000002',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Snapshot publicado exitosamente',
+    type: SnapshotResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Solo se puede publicar un snapshot completado' })
+  @ApiResponse({ status: 404, description: 'Snapshot no encontrado' })
+  async publish(
+    @CurrentUser() userId: Types.ObjectId,
+    @Param('id', ParseObjectIdPipe) id: Types.ObjectId,
+  ) {
+    return this.snapshotService.publish(userId, id);
+  }
+
+  @Post(':id/unpublish')
+  @ApiOperation({
+    summary: 'Despublicar un snapshot, removiendo la fuente de búsqueda pública',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID del snapshot a despublicar',
+    example: '66f000000000000000000002',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Snapshot despublicado exitosamente',
+    type: SnapshotResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'El snapshot no está publicado' })
+  @ApiResponse({ status: 404, description: 'Snapshot no encontrado' })
+  async unpublish(
+    @CurrentUser() userId: Types.ObjectId,
+    @Param('id', ParseObjectIdPipe) id: Types.ObjectId,
+  ) {
+    return this.snapshotService.unpublish(userId, id);
+  }
+
+  @Post('batch')
+  @ApiOperation({
+    summary: 'Ejecutar una acción en lote sobre múltiples snapshots (archive, unarchive, delete)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Acción ejecutada exitosamente sobre los snapshots indicados',
+  })
+  @ApiResponse({ status: 400, description: 'Datos de entrada inválidos' })
+  @ApiResponse({ status: 404, description: 'Algunos snapshots no fueron encontrados' })
+  async batch(@CurrentUser() userId: Types.ObjectId, @Body() batchActionDto: BatchActionDto) {
+    return this.snapshotService.batchAction(userId, batchActionDto);
   }
 }
