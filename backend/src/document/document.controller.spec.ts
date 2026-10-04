@@ -10,6 +10,7 @@ describe('DocumentController', () => {
     findAll: jest.fn(),
     findOne: jest.fn(),
     searchPublic: jest.fn(),
+    search: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -31,5 +32,22 @@ describe('DocumentController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('should call documentService.search', async () => {
+    const userId = '66f000000000000000000001' as any;
+    const query = { q: 'test', page: 1, limit: 10 } as any;
+    mockDocumentService.search.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      limit: 10,
+      totalPages: 0,
+    });
+
+    const result = await controller.search(userId, query);
+
+    expect(mockDocumentService.search).toHaveBeenCalledWith(userId, query);
+    expect(result.items).toEqual([]);
   });
 });

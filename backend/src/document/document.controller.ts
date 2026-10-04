@@ -9,6 +9,7 @@ import type { SiteDocument } from '../site/entities/site.entity';
 import { DocumentService } from './document.service';
 import { DocumentResponseDto } from './dto/document-response.dto';
 import { QueryDocumentDto } from './dto/query-document.dto';
+import { SearchDocumentDto } from './dto/search-document.dto';
 
 @ApiTags('documents')
 @Controller('documents')
@@ -41,6 +42,16 @@ export class DocumentController {
   })
   async searchPublic(@CurrentSite() site: SiteDocument, @Query() query: QueryDocumentDto) {
     return this.documentService.searchPublic(site._id, query);
+  }
+
+  @Get('search')
+  @ApiOperation({
+    summary:
+      'Buscar una keyphrase entre los documentos del snapshot publicado de cada sitio del usuario',
+  })
+  @ApiResponse({ status: 200, description: 'Resultados de búsqueda con snippet resaltado' })
+  async search(@CurrentUser() userId: Types.ObjectId, @Query() query: SearchDocumentDto) {
+    return this.documentService.search(userId, query);
   }
 
   @Get(':id')

@@ -100,6 +100,10 @@ export class SiteService {
       .exec();
   }
 
+  async findAllByUser(userId: Types.ObjectId): Promise<SiteDocument[]> {
+    return (await this.siteModel.find({ userId }).lean().exec()) as SiteDocument[];
+  }
+
   async findAll(userId: Types.ObjectId, pagination: PaginationDto) {
     const skip = (pagination.page - 1) * pagination.limit;
     const filter = { userId };

@@ -36,3 +36,27 @@ export const QueryDocumentSchema = PaginationSchema.extend({
 });
 export type QueryDocumentInput = z.infer<typeof QueryDocumentSchema>;
 
+export const SearchResultSchema = z.object({
+  _id: z.string(),
+  name: z.string(),
+  url: z.string(),
+  siteName: z.string(),
+  snippet: z.object({ before: z.string(), match: z.string(), after: z.string() }).nullable(),
+  createdAt: z.string(),
+});
+export type SearchResult = z.infer<typeof SearchResultSchema>;
+
+export const SearchResponseSchema = z.object({
+  items: z.array(SearchResultSchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+  totalPages: z.number(),
+});
+export type SearchResponse = z.infer<typeof SearchResponseSchema>;
+
+export const SearchDocumentSchema = PaginationSchema.extend({
+  q: z.string().trim().min(1).describe('Keyphrase a buscar'),
+});
+export type SearchDocumentInput = z.infer<typeof SearchDocumentSchema>;
+

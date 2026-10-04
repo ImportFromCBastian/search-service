@@ -1,4 +1,4 @@
-import { SiteResponse } from '@search-service/shared/schemas/site.schema'
+import type { SiteResponse } from '@search-service/shared/schemas/site.schema'
 
 export interface SiteDTO {
   items: SiteResponse[]

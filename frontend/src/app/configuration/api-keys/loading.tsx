@@ -1,3 +1,5 @@
+import { ArrowLeft, Loader2 } from 'lucide-react'
+import Link from 'next/link'
 import {
   Card,
   CardContent,
@@ -5,8 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { ArrowLeft, Loader2 } from 'lucide-react'
-import Link from 'next/link'
 
 export default function ApiKeysLoading() {
   return (

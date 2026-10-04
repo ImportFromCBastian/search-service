@@ -20,11 +20,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { snapshotStatusOptions } from '@/constraits/strings'
+import { useSettingsStore } from '@/store/settings-store'
 import { features } from '../../data-table-feature'
 import { getSnapshotColumns } from './columns'
 import { SnapshotActionsBar } from './snapshot-actions-bar'
-import { snapshotStatusOptions } from '@/constraits/strings'
-import { useSettingsStore } from '@/store/settings-store'
 
 interface PaginationMeta {
   page: number
@@ -100,7 +100,12 @@ export function SnapshotsTable({
           <span className="font-medium text-foreground">Filtros:</span>
           <select
             value={currentStatus || 'all'}
-            onChange={(e) => updateParam('status', e.target.value === 'all' ? undefined : e.target.value)}
+            onChange={(e) =>
+              updateParam(
+                'status',
+                e.target.value === 'all' ? undefined : e.target.value
+              )
+            }
             className="h-8 rounded-md border border-input bg-background px-2.5 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             {snapshotStatusOptions.map((opt) => (

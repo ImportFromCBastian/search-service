@@ -1,12 +1,12 @@
 import type { SiteResponse } from '@search-service/shared/schemas/site.schema'
 import { AlertCircle, Globe, Plus } from 'lucide-react'
+import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { fetchJson } from '@/lib/fetchJson'
 import { columns } from './columns'
 import { DataTable } from './data-table'
-import { cookies } from 'next/headers'
-import { SitesPageProps, SiteDTO } from './dto/site.dto'
+import type { SiteDTO, SitesPageProps } from './dto/site.dto'
 
 export default async function SitesPage({ searchParams }: SitesPageProps) {
   const resolvedParams = await searchParams

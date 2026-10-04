@@ -1,8 +1,8 @@
 import {
   Accessibility,
-  TableProperties,
-  KeyRound,
   Database,
+  KeyRound,
+  TableProperties,
 } from 'lucide-react'
 import { ConfigCard } from './config-card'
 

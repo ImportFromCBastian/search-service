@@ -1,19 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useSettingsStore, applyAccessibilityToDOM } from '@/store/settings-store'
+import { ArrowLeft, Database, Trash2 } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft, Trash2, Database } from 'lucide-react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import {
+  applyAccessibilityToDOM,
+  useSettingsStore,
+} from '@/store/settings-store'
 import { revalidateSettingsAction } from '../actions'
 
 export default function DataUsagePage() {
@@ -56,7 +59,7 @@ export default function DataUsagePage() {
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    return parseFloat((bytes / k ** i).toFixed(2)) + ' ' + sizes[i]
   }
 
   return (

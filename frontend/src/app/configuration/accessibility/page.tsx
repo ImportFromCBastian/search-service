@@ -1,6 +1,8 @@
 'use client'
 
-import { FontScaleValue, useSettingsStore } from '@/store/settings-store'
+import { Accessibility, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Card,
   CardContent,
@@ -9,7 +11,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -17,10 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ArrowLeft, Accessibility } from 'lucide-react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { Switch } from '@/components/ui/switch'
 import { fontScaleOptions } from '@/constraits/strings'
+import { type FontScaleValue, useSettingsStore } from '@/store/settings-store'
 import { revalidateSettingsAction } from '../actions'
 
 export default function AccessibilityPage() {
@@ -28,7 +28,9 @@ export default function AccessibilityPage() {
   const accessibility = useSettingsStore((state) => state.accessibility)
   const setAccessibility = useSettingsStore((state) => state.setAccessibility)
 
-  const handleUpdate = async (patch: Parameters<typeof setAccessibility>[0]) => {
+  const handleUpdate = async (
+    patch: Parameters<typeof setAccessibility>[0]
+  ) => {
     setAccessibility(patch)
     router.refresh()
     await revalidateSettingsAction()
@@ -80,9 +82,12 @@ export default function AccessibilityPage() {
                   }
                 }}
               >
-                <SelectTrigger id="font-scale" className="w-[180px]">
+                <SelectTrigger id="font-scale" className="w-45">
                   <SelectValue placeholder="Select size">
-                    {(val) => fontScaleOptions.find((o) => o.value === String(val))?.label}
+                    {(val) =>
+                      fontScaleOptions.find((o) => o.value === String(val))
+                        ?.label
+                    }
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>

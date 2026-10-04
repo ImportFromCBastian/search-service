@@ -53,3 +53,6 @@ export class CrawlDocument {
 
 export type CrawledHydratedDocument = HydratedDocument<CrawlDocument>;
 export const CrawlDocumentSchema = SchemaFactory.createForClass(CrawlDocument);
+
+CrawlDocumentSchema.index({ snapshotId: 1, createdAt: -1 });
+CrawlDocumentSchema.index({ userId: 1, createdAt: -1 });

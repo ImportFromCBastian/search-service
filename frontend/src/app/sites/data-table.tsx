@@ -17,8 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { type DataTableFeatures, features } from './data-table-feature'
 import { useSettingsStore } from '@/store/settings-store'
+import { type DataTableFeatures, features } from './data-table-feature'
 
 interface PaginationMeta {
   page: number

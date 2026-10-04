@@ -1,4 +1,7 @@
-import { fetchJson } from '@/lib/fetchJson'
+import { AlertCircle, ArrowLeft, KeyRound } from 'lucide-react'
+import Link from 'next/link'
+import type { SiteDTO } from '@/app/sites/dto/site.dto'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -6,11 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft, AlertCircle, KeyRound } from 'lucide-react'
-import Link from 'next/link'
+import { fetchJson } from '@/lib/fetchJson'
 import { RegenerateKeyDialog } from './regenerate-key-dialog'
-import { SiteDTO } from '@/app/sites/dto/site.dto'
 
 export default async function ApiKeysPage() {
   const { success, data, error } = await fetchJson<SiteDTO>('/sites', {

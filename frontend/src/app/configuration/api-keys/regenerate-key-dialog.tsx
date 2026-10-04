@@ -1,8 +1,7 @@
 'use client'
 
+import { Check, Copy, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
-import { regenerateApiKeyAction } from '../actions'
-import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,8 +13,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Copy, RefreshCw, Check } from 'lucide-react'
+import { regenerateApiKeyAction } from '../actions'
 
 interface RegenerateKeyDialogProps {
   siteId: string

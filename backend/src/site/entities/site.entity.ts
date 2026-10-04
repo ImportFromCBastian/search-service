@@ -66,3 +66,4 @@ export const SiteSchema = SchemaFactory.createForClass(Site);
 
 // Indexacion de indices para optimizar consultas frecuentes
 SiteSchema.index({ userId: 1, createdAt: -1 });
+SiteSchema.index({ apiKeyHash: 1 }, { unique: true, sparse: true });

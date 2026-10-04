@@ -1,13 +1,29 @@
 'use client'
 
-import { DefaultPageSize, Density, useSettingsStore } from '@/store/settings-store'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ArrowLeft, TableProperties } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { pageSizeOptions, densityOptions } from '@/constraits/strings'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { densityOptions, pageSizeOptions } from '@/constraits/strings'
+import {
+  type DefaultPageSize,
+  type Density,
+  useSettingsStore,
+} from '@/store/settings-store'
 import { revalidateSettingsAction } from '../actions'
 
 export default function TablePreferencesPage() {
@@ -36,8 +52,12 @@ export default function TablePreferencesPage() {
             <TableProperties className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Table Preferences</h1>
-            <p className="text-muted-foreground">Adjust how data is displayed in tables.</p>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Table Preferences
+            </h1>
+            <p className="text-muted-foreground">
+              Adjust how data is displayed in tables.
+            </p>
           </div>
         </div>
       </div>
@@ -45,27 +65,36 @@ export default function TablePreferencesPage() {
       <Card>
         <CardHeader>
           <CardTitle>Table Settings</CardTitle>
-          <CardDescription>Configure your default table experience.</CardDescription>
+          <CardDescription>
+            Configure your default table experience.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="page-size">Default Page Size</Label>
-                <p className="text-sm text-muted-foreground">Number of items to show per page by default.</p>
+                <p className="text-sm text-muted-foreground">
+                  Number of items to show per page by default.
+                </p>
               </div>
-              <Select 
+              <Select
                 items={pageSizeOptions}
                 value={String(table.defaultPageSize)}
                 onValueChange={(val) => {
                   if (val != null) {
-                    handleUpdate({ defaultPageSize: Number(val) as DefaultPageSize })
+                    handleUpdate({
+                      defaultPageSize: Number(val) as DefaultPageSize,
+                    })
                   }
                 }}
               >
-                <SelectTrigger id="page-size" className="w-[180px]">
+                <SelectTrigger id="page-size" className="w-45">
                   <SelectValue placeholder="Select size">
-                    {(val) => pageSizeOptions.find((o) => o.value === String(val))?.label}
+                    {(val) =>
+                      pageSizeOptions.find((o) => o.value === String(val))
+                        ?.label
+                    }
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
@@ -81,20 +110,24 @@ export default function TablePreferencesPage() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="density">Density</Label>
-                <p className="text-sm text-muted-foreground">Adjust the spacing inside table cells.</p>
+                <p className="text-sm text-muted-foreground">
+                  Adjust the spacing inside table cells.
+                </p>
               </div>
-              <Select 
+              <Select
                 items={densityOptions}
-                value={table.density} 
+                value={table.density}
                 onValueChange={(val) => {
                   if (val != null) {
                     handleUpdate({ density: val as Density })
                   }
                 }}
               >
-                <SelectTrigger id="density" className="w-[180px]">
+                <SelectTrigger id="density" className="w-45">
                   <SelectValue placeholder="Select density">
-                    {(val) => densityOptions.find((o) => o.value === val)?.label}
+                    {(val) =>
+                      densityOptions.find((o) => o.value === val)?.label
+                    }
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>

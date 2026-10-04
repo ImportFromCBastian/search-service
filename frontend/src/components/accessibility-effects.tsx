@@ -1,7 +1,10 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useSettingsStore, applyAccessibilityToDOM } from '@/store/settings-store'
+import {
+  applyAccessibilityToDOM,
+  useSettingsStore,
+} from '@/store/settings-store'
 
 export function AccessibilityEffects() {
   const accessibility = useSettingsStore((state) => state.accessibility)
