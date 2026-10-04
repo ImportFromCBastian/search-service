@@ -23,6 +23,8 @@ export const metadata = {
   description: 'Listado de snapshots del sitio.',
 }
 
+import { cookies } from 'next/headers'
+
 export default async function SnapshotsPage({
   params,
   searchParams,
@@ -31,7 +33,13 @@ export default async function SnapshotsPage({
   const resolvedSearchParams = await searchParams
 
   const page = Math.max(1, Number(resolvedSearchParams?.page) || 1)
-  const limit = Math.max(1, Number(resolvedSearchParams?.limit) || 10)
+
+  const cookieStore = await cookies()
+  const cookieLimit = Number(cookieStore.get('ss_page_size')?.value)
+  const limit = Math.max(
+    1,
+    Number(resolvedSearchParams?.limit) || cookieLimit || 10
+  )
   const status = resolvedSearchParams?.status || undefined
   const includeArchived = resolvedSearchParams?.includeArchived === 'true'
   const [siteRes, snapshotsRes] = await Promise.all([

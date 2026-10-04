@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { type DataTableFeatures, features } from './data-table-feature'
+import { useSettingsStore } from '@/store/settings-store'
 
 interface PaginationMeta {
   page: number
@@ -40,6 +41,8 @@ export function DataTable<TData extends RowData>({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const density = useSettingsStore((state) => state.table.density)
+  const isCompact = density === 'compact'
 
   const table = useTable({
     features,
@@ -66,7 +69,7 @@ export function DataTable<TData extends RowData>({
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="font-semibold text-foreground/80 py-3"
+                    className={`font-semibold text-foreground/80 ${isCompact ? 'py-1.5' : 'py-3'}`}
                   >
                     {header.isPlaceholder ? null : (
                       <table.FlexRender header={header} />
@@ -85,7 +88,10 @@ export function DataTable<TData extends RowData>({
                   className="transition-colors hover:bg-muted/30"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-3.5">
+                    <TableCell
+                      key={cell.id}
+                      className={isCompact ? 'py-1.5' : 'py-3.5'}
+                    >
                       <table.FlexRender cell={cell} />
                     </TableCell>
                   ))}

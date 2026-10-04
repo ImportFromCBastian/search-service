@@ -23,6 +23,8 @@ import {
 import { features } from '../../data-table-feature'
 import { getSnapshotColumns } from './columns'
 import { SnapshotActionsBar } from './snapshot-actions-bar'
+import { snapshotStatusOptions } from '@/constraits/strings'
+import { useSettingsStore } from '@/store/settings-store'
 
 interface PaginationMeta {
   page: number
@@ -51,6 +53,8 @@ export function SnapshotsTable({
   const searchParams = useSearchParams()
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const density = useSettingsStore((state) => state.table.density)
+  const isCompact = density === 'compact'
 
   const columns = useMemo(() => getSnapshotColumns(siteId), [siteId])
 
@@ -95,15 +99,15 @@ export function SnapshotsTable({
           <Filter className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="font-medium text-foreground">Filtros:</span>
           <select
-            value={currentStatus || ''}
-            onChange={(e) => updateParam('status', e.target.value)}
+            value={currentStatus || 'all'}
+            onChange={(e) => updateParam('status', e.target.value === 'all' ? undefined : e.target.value)}
             className="h-8 rounded-md border border-input bg-background px-2.5 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
-            <option value="">Todos los estados</option>
-            <option value="completed">Completado</option>
-            <option value="running">En curso</option>
-            <option value="pending">Pendiente</option>
-            <option value="failed">Fallido</option>
+            {snapshotStatusOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -139,7 +143,7 @@ export function SnapshotsTable({
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="font-semibold text-foreground/80 py-3"
+                    className={`font-semibold text-foreground/80 ${isCompact ? 'py-1.5' : 'py-3'}`}
                   >
                     {header.isPlaceholder ? null : (
                       <table.FlexRender header={header} />
@@ -158,7 +162,10 @@ export function SnapshotsTable({
                   className="transition-colors hover:bg-muted/30"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-3">
+                    <TableCell
+                      key={cell.id}
+                      className={isCompact ? 'py-1.5' : 'py-3'}
+                    >
                       <table.FlexRender cell={cell} />
                     </TableCell>
                   ))}

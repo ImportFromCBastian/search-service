@@ -111,6 +111,7 @@
   --sidebar-accent-foreground: #265275;
   --sidebar-border: #d4e2f3;
   --sidebar-ring: #265275;
+  --font-scale: 1;
 }
 
 .dark {
@@ -171,4 +172,41 @@
   body {
     @apply bg-background text-foreground min-h-screen antialiased;
   }
+}
+
+/* Accessibility Settings Variables and Rules */
+:root {
+  --font-scale: 1;
+}
+
+html {
+  font-size: calc(100% * var(--font-scale));
+}
+
+html.high-contrast {
+  --foreground: #000000 !important;
+  --background: #ffffff !important;
+  --primary: #0000ee !important;
+  --muted-foreground: #333333 !important;
+  --border: #000000 !important;
+}
+
+html.dark.high-contrast {
+  --foreground: #ffffff !important;
+  --background: #000000 !important;
+  --primary: #ffff00 !important;
+  --muted-foreground: #cccccc !important;
+  --border: #ffffff !important;
+}
+
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  transition-duration: 0.001ms !important;
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+}
+
+html.underline-links a {
+  text-decoration: underline !important;
 }

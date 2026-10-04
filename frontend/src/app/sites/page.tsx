@@ -5,26 +5,16 @@ import { Button } from '@/components/ui/button'
 import { fetchJson } from '@/lib/fetchJson'
 import { columns } from './columns'
 import { DataTable } from './data-table'
-
-interface SiteDTO {
-  items: SiteResponse[]
-  total: number
-  page: number
-  limit: number
-  totalPages: number
-}
-
-interface SitesPageProps {
-  searchParams: Promise<{
-    page?: string
-    limit?: string
-  }>
-}
+import { cookies } from 'next/headers'
+import { SitesPageProps, SiteDTO } from './dto/site.dto'
 
 export default async function SitesPage({ searchParams }: SitesPageProps) {
   const resolvedParams = await searchParams
   const page = Math.max(1, Number(resolvedParams?.page) || 1)
-  const limit = Math.max(1, Number(resolvedParams?.limit) || 10)
+
+  const cookieStore = await cookies()
+  const cookieLimit = Number(cookieStore.get('ss_page_size')?.value)
+  const limit = Math.max(1, Number(resolvedParams?.limit) || cookieLimit || 10)
 
   const { success, data, error } = await fetchJson<SiteDTO>('/sites', {
     params: { page, limit },
