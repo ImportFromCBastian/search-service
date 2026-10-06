@@ -219,7 +219,7 @@ export class SnapshotService {
     return await this.snapshotModel.findOneAndUpdate(
       { _id: snapshotId },
       { $set: { status: SNAPSHOT_STATUSES[1], startedAt } },
-      { new: true },
+      { returnDocument: 'after' },
     );
   }
 

@@ -143,7 +143,7 @@ export class SiteService {
       .findOneAndUpdate(
         { _id: id, userId },
         { $set: updateSiteDto },
-        { new: true, runValidators: true },
+        { returnDocument: 'after', runValidators: true },
       )
       .lean()
       .exec();
@@ -175,7 +175,7 @@ export class SiteService {
       .findOneAndUpdate(
         { _id: id, userId },
         { $set: { apiKeyHash: hash, apiKeyPrefix: prefix } },
-        { new: true },
+        { returnDocument: 'after' },
       )
       .exec();
 

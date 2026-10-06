@@ -85,12 +85,21 @@ export const SnapshotSchema = SchemaFactory.createForClass(Snapshot);
 SnapshotSchema.index(
   { siteId: 1 },
   {
+    name: 'unique_active_snapshot_per_site',
     unique: true,
     partialFilterExpression: { status: { $in: ACTIVE_SNAPSHOT_STATUSES } },
   },
 );
 
+/**
+ * Garantía física de un único snapshot publicado por sitio.
+ * Se usa -1 en siteId para evitar el "Duplicate schema index warning" de Mongoose.
+ */
 SnapshotSchema.index(
-  { siteId: 1 },
-  { unique: true, partialFilterExpression: { isPublished: true } },
+  { siteId: -1 },
+  {
+    name: 'unique_published_snapshot_per_site',
+    unique: true,
+    partialFilterExpression: { isPublished: true },
+  },
 );
