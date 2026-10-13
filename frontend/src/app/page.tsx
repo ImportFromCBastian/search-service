@@ -1,10 +1,10 @@
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import ButtonAuth from '@/components/auth/login-button'
 
 export default function Home() {
   return (
     <Link href="/sites" className="flex items-center justify-center">
-      <Button>To Sites</Button>
+      <ButtonAuth />
     </Link>
   )
 }

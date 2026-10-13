@@ -1,12 +1,18 @@
+'use client'
+
 import { Search } from 'lucide-react'
 import Link from 'next/link'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { Blobatar } from '@/components/ui/blobatar'
 import { NavLinks } from './nav-links'
+import { useActiveNavbarStore } from '@/store/activeNavbar'
+import UserProfileSection from '../profile/user-profile-section'
 
 export default function NavBar() {
+  const { activeNavbar } = useActiveNavbarStore()
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-md">
+    <header
+      className={`sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-md ${activeNavbar ? 'block' : 'hidden'} transition-all duration-300`}
+    >
       <div className="container mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
         <LogoSection />
         <NavLinks />
@@ -28,19 +34,6 @@ function LogoSection() {
         </span>
         <span>Search Service</span>
       </Link>
-    </div>
-  )
-}
-
-function UserProfileSection() {
-  return (
-    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-      <ThemeToggle />
-      <span className="hidden sm:inline font-medium text-foreground">
-        sebshndz{' '}
-        <span className="text-muted-foreground font-normal">(Admin)</span>
-      </span>
-      <Blobatar name="sebshndz2001" />
     </div>
   )
 }
