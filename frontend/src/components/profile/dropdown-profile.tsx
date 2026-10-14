@@ -1,50 +1,47 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
 import { Blobatar } from 'blobatar/react'
 import { LogOutIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuGroup,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useActiveNavbarStore } from '@/store/activeNavbar'
-import { redirect, RedirectType } from 'next/navigation'
+import type { UserProps } from './user-props'
 
-export default function DropdownProfile() {
-  const { setActiveNavbar } = useActiveNavbarStore()
-
-  const handleLogout = async (): Promise<void> => {
-    setActiveNavbar(false)
-    redirect('/', RedirectType.replace)
-  }
+export default function DropdownProfile({ user }: UserProps) {
+  const avatarSeed = user?.nickname || user?.name || user?.email || 'username'
+  const displayName = 'My Account'
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
           <Button variant="ghost" size="icon" className="rounded-full">
-            <Blobatar name="sebshndz2001" />
+            <Blobatar name={avatarSeed} />
           </Button>
         }
       />
-      <DropdownMenuContent align="start">
+      <DropdownMenuContent align="end">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem
             variant="destructive"
-            onClick={handleLogout}
             className="cursor-pointer"
+            render={<a href="/auth/logout" />}
           >
-            <LogOutIcon />
-            Logout
+            <div className="flex items-center gap-2">
+              <LogOutIcon />
+              Logout
+            </div>
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

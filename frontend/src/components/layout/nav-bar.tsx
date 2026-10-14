@@ -1,22 +1,22 @@
-'use client'
-
 import { Search } from 'lucide-react'
 import Link from 'next/link'
-import { NavLinks } from './nav-links'
-import { useActiveNavbarStore } from '@/store/activeNavbar'
+import { auth0 } from '@/lib/auth0'
 import UserProfileSection from '../profile/user-profile-section'
+import { NavLinks } from './nav-links'
 
-export default function NavBar() {
-  const { activeNavbar } = useActiveNavbarStore()
+export default async function NavBar() {
+  const session = await auth0.getSession()
+
+  if (!session) {
+    return null
+  }
 
   return (
-    <header
-      className={`sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-md ${activeNavbar ? 'block' : 'hidden'} transition-all duration-300`}
-    >
+    <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-md transition-all duration-300">
       <div className="container mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
         <LogoSection />
         <NavLinks />
-        <UserProfileSection />
+        <UserProfileSection user={session.user} />
       </div>
     </header>
   )
