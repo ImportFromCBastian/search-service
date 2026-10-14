@@ -11,6 +11,7 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "@auth0/nextjs-auth0": "~4.32.0",
     "@base-ui/react": "^1.8.0",
     "@blobatar/react": "^2.7.0",
     "@hookform/resolvers": "^5.9.1",
