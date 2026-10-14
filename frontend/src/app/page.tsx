@@ -1,19 +1,22 @@
-import { auth0 } from "@/lib/auth0";
+import { auth0 } from '@/lib/auth0'
 import Link from 'next/link'
 import ButtonAuth from '@/components/auth/login-button'
 
 export default async function Home() {
-  const session = await auth0.getSession();
-    // Check if user is authenticated
+  const session = await auth0.getSession()
+  // Check if user is authenticated
 
   if (!session) {
     return (
       <>
-       <Link href="/auth/login?screen_hint=signup" className="flex items-center justify-center">
-      <ButtonAuth />
-    </Link>
+        <Link
+          href="/auth/login?screen_hint=signup"
+          className="flex items-center justify-center"
+        >
+          <ButtonAuth />
+        </Link>
       </>
-    );
+    )
   }
 
   return (
@@ -27,8 +30,5 @@ export default async function Home() {
       {/* Ends the session and redirects to Auth0 to log out */}
       <a href="/auth/logout">Logout</a>
     </>
-  );
-    
-  
+  )
 }
-
