@@ -14,7 +14,6 @@ describe('JwtStrategy', () => {
   let resolver: UserIdentityResolver;
 
   beforeEach(() => {
-    
     resolver = new UserIdentityResolver();
     strategy = new JwtStrategy(mockConfigService as ConfigService, resolver);
   });

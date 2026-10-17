@@ -14,7 +14,6 @@ async function run() {
   const shouldSeed = process.argv.includes('--seed') || !shouldReset;
 
   if (shouldReset && process.env.NODE_ENV === 'production') {
-    console.error('✖ No se permite --reset con NODE_ENV=production.');
     process.exit(1);
   }
 
@@ -32,11 +31,10 @@ async function run() {
       documentModel.deleteMany({}),
       crawlLogModel.deleteMany({}),
     ]);
-    console.log('✓ Colecciones vaciadas (sites, snapshots, documents, crawl_logs).');
   }
 
   if (shouldSeed) {
-    const { rawKey, hash, prefix } = generateApiKey();
+    const { hash, prefix } = generateApiKey();
 
     const site = await siteModel.create({
       userId: DEFAULT_USER_ID,
@@ -81,14 +79,11 @@ async function run() {
         crawl: { statusCode: 200, executionTimeMs: 120, fetchedAt: new Date() },
       },
     ]);
-
-    console.log(`✓ Seed creado. Sitio "${site.name}" — API key: ${rawKey}`);
   }
 
   await app.close();
 }
 
-run().catch((err) => {
-  console.error('✖ Error al seedear/resetear:', err);
+run().catch((_err) => {
   process.exit(1);
 });
