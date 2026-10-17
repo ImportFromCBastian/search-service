@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthzModule } from './authz/authz.module';
 import { validateEnv } from './config/env.validation';
 import { CrawlLogModule } from './crawl-log/crawl-log.module';
 import { CrawlerModule } from './crawler/crawler.module';
@@ -53,6 +54,7 @@ import { SnapshotModule } from './snapshot/snapshot.module';
     DocumentModule,
     CrawlLogModule,
     CrawlerModule,
+    AuthzModule,
   ],
   controllers: [AppController],
   providers: [AppService],

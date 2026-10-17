@@ -1,8 +1,9 @@
-import type { SiteResponse } from '@search-service/shared/schemas/site.schema'
 import { AlertCircle, Globe, Plus } from 'lucide-react'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { auth0 } from '@/lib/auth0'
 import { fetchJson } from '@/lib/fetchJson'
 import { columns } from './columns'
 import { DataTable } from './data-table'
@@ -11,11 +12,15 @@ import type { SiteDTO, SitesPageProps } from './dto/site.dto'
 export default async function SitesPage({ searchParams }: SitesPageProps) {
   const resolvedParams = await searchParams
   const page = Math.max(1, Number(resolvedParams?.page) || 1)
+  const session = await auth0.getSession()
+
+  if (!session) {
+    redirect('/')
+  }
 
   const cookieStore = await cookies()
   const cookieLimit = Number(cookieStore.get('ss_page_size')?.value)
   const limit = Math.max(1, Number(resolvedParams?.limit) || cookieLimit || 10)
-
   const { success, data, error } = await fetchJson<SiteDTO>('/sites', {
     params: { page, limit },
     cache: 'no-store',

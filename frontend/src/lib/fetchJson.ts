@@ -1,3 +1,4 @@
+import { auth0 } from './auth0'
 import { BACKEND_URL } from './config'
 
 export interface FetchOptions extends Omit<RequestInit, 'body'> {
@@ -61,6 +62,27 @@ export async function fetchJson<T>(
       ...(headers as Record<string, string>),
     }
 
+    // Inyectar automáticamente el token JWT de Auth0
+    if (
+      typeof window === 'undefined' &&
+      !requestHeaders.Authorization &&
+      !requestHeaders.authorization
+    ) {
+      try {
+        const { token } = await auth0.getAccessToken()
+        if (token) {
+          // token JWT válido
+          const isJwt =
+            typeof token === 'string' && token.split('.').length === 3
+          if (isJwt) {
+            requestHeaders.Authorization = `Bearer ${token}`
+          }
+        }
+      } catch {
+        // En peticiones anónimas o sin sesión activa
+      }
+    }
+
     let requestBody: BodyInit | undefined
     if (body !== undefined && body !== null) {
       if (
@@ -74,7 +96,6 @@ export async function fetchJson<T>(
         requestBody = body as BodyInit
       }
     }
-
     const response = await fetch(url, {
       ...restOptions,
       headers: requestHeaders,

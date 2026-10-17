@@ -7,6 +7,8 @@ export const envSchema = z.object({
   MONGODB_URI: z.string().min(1).default('mongodb://127.0.0.1:27017/search-service'),
   REDIS_HOST: z.string().default('127.0.0.1'),
   REDIS_PORT: z.coerce.number().default(6379),
+  AUTH0_ISSUER_URL: z.url().default(''),
+  AUTH0_AUDIENCE: z.string().min(1).default(''),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

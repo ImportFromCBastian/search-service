@@ -29,7 +29,7 @@ export class DocumentController {
     return this.documentService.findAll(userId, query);
   }
 
-  @Get('public/search')
+  @Get('/search')
   @UseGuards(ApiKeyGuard)
   @ApiSecurity('api-key')
   @ApiOperation({

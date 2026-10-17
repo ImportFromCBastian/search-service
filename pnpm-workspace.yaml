@@ -3,10 +3,6 @@ packages:
   - "backend"
   - "frontend"
 
-ignoredBuiltDependencies:
-  - sharp
-  - unrs-resolver
-
 allowBuilds:
   "@parcel/watcher": true
   "@scarf/scarf": true

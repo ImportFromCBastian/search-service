@@ -2,12 +2,12 @@ import { NestFactory } from '@nestjs/core';
 import { getModelToken } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 import { AppModule } from '../app.module';
-import {  type CrawlLogDocument } from '../crawl-log/entities/crawl-log.entity';
-import { type CrawledHydratedDocument, CrawlDocument } from '../document/entities/document.entity';
+import { type CrawlLogDocument } from '../crawl-log/entities/crawl-log.entity';
+import { CrawlDocument, type CrawledHydratedDocument } from '../document/entities/document.entity';
 import { DEFAULT_USER_ID } from '../shared/decorators/current-user.decorator';
 import { generateApiKey } from '../shared/utils/api-key.util';
-import {  type SiteDocument } from '../site/entities/site.entity';
-import {  type SnapshotDocument } from '../snapshot/entities/snapshot.entity';
+import { type SiteDocument } from '../site/entities/site.entity';
+import { type SnapshotDocument } from '../snapshot/entities/snapshot.entity';
 
 async function run() {
   const shouldReset = process.argv.includes('--reset');
@@ -55,6 +55,13 @@ async function run() {
       siteId: site._id,
       status: 'completed',
       trigger: 'manual',
+      configUsed: {
+        url: site.url,
+        depth: site.depth,
+        frequency: site.frequency,
+        extractor: site.extractor,
+        pageResolver: site.pageResolver,
+      },
       isPublished: true,
       isArchived: false,
     });
