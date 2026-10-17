@@ -29,7 +29,7 @@ export function CtaBanner() {
           </p>
 
           <div className="relative z-10 flex flex-wrap items-center justify-center gap-4">
-            <Link href="/auth/login?screen_hint=signup">
+            <a href="/auth/login?screen_hint=signup">
               <Button
                 size="lg"
                 className="h-12 px-7 text-base font-bold gap-2 bg-white text-slate-950 hover:bg-slate-100 border border-white shadow-xl focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f2334] cursor-pointer"
@@ -38,9 +38,9 @@ export function CtaBanner() {
                 <span>Crear cuenta gratuita</span>
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
-            </Link>
+            </a>
 
-            <Link href="/auth/login">
+            <a href="/auth/login">
               <Button
                 variant="outline"
                 size="lg"
@@ -48,7 +48,7 @@ export function CtaBanner() {
               >
                 <span>Ya tengo cuenta · Iniciar sesión</span>
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
       </div>

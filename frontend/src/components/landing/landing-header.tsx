@@ -76,7 +76,7 @@ export function LandingHeader() {
             <ThemeToggle />
 
             {/* Iniciar Sesión con Auth0 */}
-            <Link href="/auth/login">
+            <a href="/auth/login">
               <Button
                 variant="ghost"
                 size="sm"
@@ -85,10 +85,10 @@ export function LandingHeader() {
                 <LogIn className="h-4 w-4" />
                 <span className="hidden sm:inline">Iniciar Sesión</span>
               </Button>
-            </Link>
+            </a>
 
             {/* Registro con Auth0 */}
-            <Link href="/auth/login?screen_hint=signup">
+            <a href="/auth/login?screen_hint=signup">
               <Button
                 size="sm"
                 className="btn-shimmer gap-1.5 shadow-sm font-semibold cursor-pointer"
@@ -96,7 +96,7 @@ export function LandingHeader() {
                 <span>Registrarse</span>
                 <ArrowRight className="h-4 w-4" />
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
       </header>

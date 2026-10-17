@@ -93,7 +93,7 @@ export function HeroSection() {
 
         {/* Botones CTA Principales */}
         <div className="flex flex-wrap items-center justify-center gap-4 mb-16">
-          <Link href="/auth/login?screen_hint=signup">
+          <a href="/auth/login?screen_hint=signup">
             <Button
               size="lg"
               className="btn-shimmer h-12 px-7 text-base font-semibold gap-2 shadow-lg shadow-primary/25"
@@ -102,7 +102,7 @@ export function HeroSection() {
               <span>Comenzar con Search Service — Gratis</span>
               <ArrowRight className="h-4 w-4" />
             </Button>
-          </Link>
+          </a>
 
           <a href="#demo">
             <Button
